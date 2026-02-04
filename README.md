@@ -84,6 +84,12 @@ You can switch ZeRO stage with:
 if needed. Override with:
 - `--num-generations 4`
 
+## Chat templates
+Some base models (like `unsloth/gemma-2b`) do not ship a chat template.
+The runner detects this and injects a simple fallback template.
+You can override it with:
+- `--chat-template path\to\template.jinja`
+
 ## Failure cleanup
 If the run fails after a Pod is created, the script automatically stops and attempts to terminate the Pod to avoid extra charges.
 

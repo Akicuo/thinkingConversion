@@ -1,172 +1,172 @@
 (venv) PS C:\Users\lyani\ClaudeProjects\thinkingConversion> python thinnka_runner.py --repo-id unsloth/gemma-2b --gpu-count 1 --env-file .env --debug-remote --deepspeed-stage 2
 Error: Remote command failed with exit status 1. Last output:
-shuffle_dataset=True,
-skip_memory_metrics=True,
-steps_per_generation=4,
-sync_ref_model=False,
-system_prompt=You are a helpful AI Assistant that provides well-reasoned and detailed responses. First reason inside <think> and </think>. Then provide the final answer directly after thinking.,
-temperature=0.7,
-tf32=None,
-top_k=None,
-top_p=1.0,
-torch_compile=False,
-torch_compile_backend=None,
-torch_compile_mode=None,
-torch_empty_cache_steps=None,
-torchdynamo=None,
-tpu_metrics_debug=False,
-tpu_num_cores=None,
-use_cpu=False,
-use_ipex=False,
-use_legacy_prediction_loop=False,
-use_liger_kernel=True,
-use_liger_loss=False,
-use_mps_device=False,
-use_vllm=True,
-vllm_gpu_memory_utilization=0.3,
-vllm_guided_decoding_regex=None,
-vllm_mode=colocate,
-vllm_server_base_url=None,
-vllm_server_host=0.0.0.0,
-vllm_server_port=8000,
-vllm_server_timeout=240.0,
-vllm_tensor_parallel_size=1,
-wandb_entity=None,
-wandb_log_unique_prompts=True,
-wandb_project=None,
-wandb_run_group=None,
-warmup_ratio=0.1,
-warmup_steps=0,
-weight_decay=0.0,
-)
-2026-02-04 21:12:58 - INFO - open_r1.utils.data - Loading dataset: open-r1/OpenR1-Math-220k
-README.md: 5.13kB [00:00, 23.2MB/s]
-Resolving data files: 100%|██████████████████| 20/20 [00:00<00:00, 40271.76it/s]
-Generating dataset open_r1-math-220k (/root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68)
-2026-02-04 21:13:01 - INFO - datasets.builder - Generating dataset open_r1-math-220k (/root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68)
-Downloading and preparing dataset open_r1-math-220k/default to /root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68...
-2026-02-04 21:13:01 - INFO - datasets.builder - Downloading and preparing dataset open_r1-math-220k/default to /root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68...      
-data/train-00000-of-00010.parquet: 100%|█████| 214M/214M [00:04<00:00, 52.1MB/s]
-data/train-00001-of-00010.parquet: 100%|██████| 215M/215M [00:01<00:00, 146MB/s]
-data/train-00002-of-00010.parquet: 100%|█████| 215M/215M [00:02<00:00, 78.2MB/s]
-data/train-00003-of-00010.parquet: 100%|██████| 217M/217M [00:01<00:00, 153MB/s]
-data/train-00004-of-00010.parquet: 100%|██████| 215M/215M [00:01<00:00, 153MB/s]
-data/train-00005-of-00010.parquet: 100%|██████| 214M/214M [00:01<00:00, 150MB/s]
-data/train-00006-of-00010.parquet: 100%|██████| 216M/216M [00:01<00:00, 154MB/s]
-data/train-00007-of-00010.parquet: 100%|██████| 216M/216M [00:01<00:00, 156MB/s]
-data/train-00008-of-00010.parquet: 100%|██████| 214M/214M [00:01<00:00, 152MB/s]
-data/train-00009-of-00010.parquet: 100%|█████| 215M/215M [00:03<00:00, 70.3MB/s]
-Downloading took 0.0 min
-2026-02-04 21:13:26 - INFO - datasets.download.download_manager - Downloading took 0.0 min
-Checksum Computation took 0.0 min
-2026-02-04 21:13:26 - INFO - datasets.download.download_manager - Checksum Computation took 0.0 min
-Generating train split
-2026-02-04 21:13:26 - INFO - datasets.builder - Generating train split
-Generating train split: 100%|███| 93733/93733 [00:06<00:00, 13502.01 examples/s]
-All the splits matched successfully.
-2026-02-04 21:13:33 - INFO - datasets.utils.info_utils - All the splits matched successfully.
-Dataset open_r1-math-220k downloaded and prepared to /root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68. Subsequent calls will reuse this data.
-2026-02-04 21:13:33 - INFO - datasets.builder - Dataset open_r1-math-220k downloaded and prepared to /root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68. Subsequent calls will reuse this data.
-tokenizer_config.json: 40.0kB [00:00, 133MB/s]
-tokenizer.model: 100%|█████████████████████| 4.24M/4.24M [00:00<00:00, 5.28MB/s]
-tokenizer.json: 100%|██████████████████████| 17.5M/17.5M [00:00<00:00, 34.1MB/s]
-special_tokens_map.json: 100%|█████████████████| 636/636 [00:00<00:00, 7.04MB/s]
-[INFO|tokenization_utils_base.py:2023] 2026-02-04 21:13:36,710 >> loading file tokenizer.model from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/tokenizer.model      
-[INFO|tokenization_utils_base.py:2023] 2026-02-04 21:13:36,710 >> loading file tokenizer.json from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/tokenizer.json        
-[INFO|tokenization_utils_base.py:2023] 2026-02-04 21:13:36,710 >> loading file added_tokens.json from cache at None
-[INFO|tokenization_utils_base.py:2023] 2026-02-04 21:13:36,710 >> loading file special_tokens_map.json from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/special_tokens_map.json
-[INFO|tokenization_utils_base.py:2023] 2026-02-04 21:13:36,710 >> loading file tokenizer_config.json from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/tokenizer_config.json
-[INFO|tokenization_utils_base.py:2023] 2026-02-04 21:13:36,710 >> loading file chat_template.jinja from cache at None
-2026-02-04 21:13:37 - INFO - __main__ - *** Loading model ***
-config.json: 100%|█████████████████████████████| 721/721 [00:00<00:00, 5.86MB/s]
-[INFO|configuration_utils.py:698] 2026-02-04 21:13:37,744 >> loading configuration file config.json from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/config.json     
-[INFO|configuration_utils.py:770] 2026-02-04 21:13:37,745 >> Model config GemmaConfig {
-"architectures": [
-"GemmaForCausalLM"
-],
-"attention_bias": false,
-"attention_dropout": 0.0,
-"bos_token_id": 2,
-"eos_token_id": 1,
-"head_dim": 256,
-"hidden_act": "gelu",
-"hidden_activation": null,
-"hidden_size": 2048,
-"initializer_range": 0.02,
-"intermediate_size": 16384,
-"max_position_embeddings": 8192,
-"model_type": "gemma",
-"num_attention_heads": 8,
-"num_hidden_layers": 18,
-"num_key_value_heads": 1,
-"pad_token_id": 0,
-"rms_norm_eps": 1e-06,
-"rope_scaling": null,
-"rope_theta": 10000.0,
-"torch_dtype": "bfloat16",
-"transformers_version": "4.52.3",
-"unsloth_version": "2024.9",
-"use_cache": false,
-"vocab_size": 256000
+"max_train_micro_batch_size_per_gpu": 1.024000e+03,
+"min_train_micro_batch_size_per_gpu": 1,
+"num_tuning_micro_batch_sizes": 3
 }
-model.safetensors: 100%|████████████████████| 5.01G/5.01G [00:08<00:00, 617MB/s]
-[INFO|modeling_utils.py:1150] 2026-02-04 21:13:46,463 >> loading weights file model.safetensors from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/model.safetensors   
-[INFO|modeling_utils.py:2240] 2026-02-04 21:13:46,464 >> Instantiating GemmaForCausalLM model under default dtype torch.bfloat16.
-[INFO|configuration_utils.py:1135] 2026-02-04 21:13:46,466 >> Generate config GenerationConfig {
-"bos_token_id": 2,
-"eos_token_id": 1,
-"pad_token_id": 0,
-"use_cache": false
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   bfloat16_enabled ............. True
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   bfloat16_immediate_grad_update  True
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   checkpoint_parallel_write_pipeline  False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   checkpoint_tag_validation_enabled  True
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   checkpoint_tag_validation_fail  False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   comms_config ................. <deepspeed.comm.config.DeepSpeedCommsConfig object at 0x7e16930034d0>
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   communication_data_type ...... None
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   compile_config ............... deepcompile=False free_activation=False offload_activation=False offload_opt_states=False double_buffer=True symmetric_memory=False debug_log=False offload_parameters=False sync_before_reduce=False sync_after_reduce=False sync_before_allgather=False sync_after_allgather=False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   compression_config ........... {'weight_quantization': {'shared_parameters': {'enabled': False, 'quantizer_kernel': False, 'schedule_offset': 0, 'quantize_groups': 1, 'quantize_verbose': False, 'quantization_type': 'symmetric', 'quantize_weight_in_forward': False, 'rounding': 'nearest', 'fp16_mixed_quantize': False, 'quantize_change_ratio': 0.001}, 'different_groups': {}}, 'activation_quantization': {'shared_parameters': {'enabled': False, 'quantization_type': 'symmetric', 'range_calibration': 'dynamic', 'schedule_offset': 1000}, 'different_groups': {}}, 'sparse_pruning': {'shared_parameters': {'enabled': False, 'method': 'l1', 'schedule_offset': 1000}, 'different_groups': {}}, 'row_pruning': {'shared_parameters': {'enabled': False, 'method': 'l1', 'schedule_offset': 1000}, 'different_groups': {}}, 'head_pruning': {'shared_parameters': {'enabled': False, 'method': 'topk', 'schedule_offset': 1000}, 'different_groups': {}}, 'channel_pruning': {'shared_parameters': {'enabled': False, 'method': 'l1', 'schedule_offset': 1000}, 'different_groups': {}}, 'layer_reduction': {'enabled': False}}
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   curriculum_enabled_legacy .... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   curriculum_params_legacy ..... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   data_efficiency_config ....... {'enabled': False, 'seed': 1234, 'data_sampling': {'enabled': False, 'num_epochs': 1000, 'num_workers': 0, 'pin_memory': False, 'curriculum_learning': {'enabled': False}, 'dynamic_batching': {'enabled': False, 'lr_scaling_method': 'linear', 'min_batch_size': 1, 'max_batch_size': None, 'sequence_picking_order': 'dataloader', 'verbose': False}}, 'data_routing': {'enabled': False, 'random_ltd': {'enabled': False, 'layer_token_lr_schedule': {'enabled': False}}}}
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   data_efficiency_enabled ...... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   dataloader_drop_last ......... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   disable_allgather ............ False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   dump_state ................... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   dynamic_loss_scale_args ...... None
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_enabled ........... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_gas_boundary_resolution  1
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_layer_name ........ bert.encoder.layer
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_layer_num ......... 0
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_max_iter .......... 100
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_stability ......... 1e-06
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_tol ............... 0.01
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   eigenvalue_verbose ........... False
+[2026-02-04 21:44:33,826] [INFO] [config.py:1007:print]   elasticity_enabled ........... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   flops_profiler_config ........ {
+"enabled": false,
+"recompute_fwd_factor": 0.0,
+"profile_step": 1,
+"module_depth": -1,
+"top_modules": 1,
+"detailed": true,
+"output_file": null
 }
-[INFO|modeling_utils.py:5130] 2026-02-04 21:13:46,493 >> All model checkpoint weights were used when initializing GemmaForCausalLM.
-[INFO|modeling_utils.py:5138] 2026-02-04 21:13:46,493 >> All the weights of GemmaForCausalLM were initialized from the model checkpoint at unsloth/gemma-2b.
-If your task is similar to the task the model of the checkpoint was trained on, you can already use GemmaForCausalLM for predictions without further training.
-generation_config.json: 100%|██████████████████| 154/154 [00:00<00:00, 1.24MB/s]
-[INFO|configuration_utils.py:1090] 2026-02-04 21:13:47,202 >> loading configuration file generation_config.json from cache at /root/.cache/huggingface/hub/models--unsloth--gemma-2b/snapshots/7ac9d201a57c8cdc6f939069fc0f044c60197a4a/generation_config.json
-[INFO|configuration_utils.py:1135] 2026-02-04 21:13:47,202 >> Generate config GenerationConfig {
-"bos_token_id": 2,
-"eos_token_id": 1,
-"max_length": 8192,
-"pad_token_id": 0
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   fp16_auto_cast ............... None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   fp16_enabled ................. False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   fp16_master_weights_and_gradients  False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   global_rank .................. 0
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   grad_accum_dtype ............. None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   gradient_accumulation_steps .. 4
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   gradient_clipping ............ 1.0
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   gradient_predivide_factor .... 1.0
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   graph_harvesting ............. False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   hybrid_engine ................ enabled=False max_out_tokens=512 inference_tp_size=1 release_inference_cache=False pin_parameters=True tp_gather_partition_size=8
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   initial_dynamic_scale ........ 1
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   load_universal_checkpoint .... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   loss_scale ................... 1.0
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   memory_breakdown ............. False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   mics_hierarchial_params_gather  False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   mics_shard_size .............. -1
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   monitor_config ............... tensorboard=TensorBoardConfig(enabled=False, output_path='', job_name='DeepSpeedJobName') comet=CometConfig(enabled=False, samples_log_interval=100, project=None, workspace=None, api_key=None, experiment_name=None, experiment_key=None, online=None, mode=None) wandb=WandbConfig(enabled=False, group=None, team=None, project='deepspeed') csv_monitor=CSVConfig(enabled=False, output_path='', job_name='DeepSpeedJobName')
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   nebula_config ................ {
+"enabled": false,
+"persistent_storage_path": null,
+"persistent_time_interval": 100,
+"num_of_version_in_retention": 2,
+"enable_nebula_load": true,
+"load_path": null
 }
-Map:   0%|                                     | 0/93733 [00:00<?, ? examples/s]Caching processed dataset at /root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68/cache-0083c9c243e0af54.arrow
-2026-02-04 21:13:47 - INFO - datasets.arrow_dataset - Caching processed dataset at /root/.cache/huggingface/datasets/open-r1___open_r1-math-220k/default/0.0.0/e4e141ec9dea9f8326f4d347be56105859b2bd68/cache-0083c9c243e0af54.arrow        
-Map: 100%|███████████████████████| 93733/93733 [00:13<00:00, 7011.80 examples/s]
-2026-02-04 21:14:01 - INFO - liger_kernel.transformers.monkey_patch - Applying Liger kernels to model instance with model type: gemma with kwargs: {}
-[rank0]: Traceback (most recent call last):
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/huggingface_hub/utils/_http.py", line 403, in hf_raise_for_status
-[rank0]:     response.raise_for_status()
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/requests/models.py", line 1026, in raise_for_status
-[rank0]:     raise HTTPError(http_error_msg, response=self)
-[rank0]: requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://huggingface.co/api/repos/create
-[rank0]: The above exception was the direct cause of the following exception:
-[rank0]: Traceback (most recent call last):
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   optimizer_legacy_fusion ...... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   optimizer_name ............... None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   optimizer_params ............. None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   pipeline ..................... {'stages': 'auto', 'partition': 'best', 'seed_layers': False, 'activation_checkpoint_interval': 0, 'pipe_partitioned': True, 'grad_partitioned': True}
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   pld_enabled .................. False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   pld_params ................... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   prescale_gradients ........... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   scheduler_name ............... None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   scheduler_params ............. None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   seq_parallel_communication_data_type  torch.float32
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   sparse_attention ............. None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   sparse_gradients_enabled ..... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   steps_per_print .............. inf
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   tensor_parallel_config ....... dtype=torch.float16 autotp_size=0 tp_overlap_comm=False tensor_parallel=TPConfig(tp_size=1, tp_grain_size=1, mpu=None, tp_group=None) injection_policy_tuple=None keep_module_on_host=False replace_with_kernel_inject=False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   timers_config ................ enabled=True synchronized=True
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   train_batch_size ............. 4
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   train_micro_batch_size_per_gpu  1
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   use_data_before_expert_parallel_  False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   use_node_local_storage ....... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   wall_clock_breakdown ......... False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   weight_quantization_config ... None
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   world_size ................... 1
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   zero_allow_untested_optimizer  True
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   zero_config .................. stage=2 contiguous_gradients=True reduce_scatter=True reduce_bucket_size=500000000 use_multi_rank_bucket_allreduce=True allgather_partitions=True allgather_bucket_size=500000000 overlap_comm=False load_from_fp32_weights=True elastic_checkpoint=False offload_param=DeepSpeedZeroOffloadParamConfig(device='none', nvme_path=None, buffer_count=5, buffer_size=100000000, max_in_cpu=1000000000, pin_memory=False) offload_optimizer=DeepSpeedZeroOffloadOptimizerConfig(device='none', nvme_path=None, buffer_count=4, pin_memory=False, pipeline_read=False, pipeline_write=False, fast_init=False, ratio=1.0) sub_group_size=1000000000 cpu_offload_param=None cpu_offload_use_pin_memory=None cpu_offload=None prefetch_bucket_size=50000000 param_persistence_threshold=100000 model_persistence_threshold=9223372036854775807 max_live_parameters=1000000000 max_reuse_distance=1000000000 gather_16bit_weights_on_model_save=False module_granularity_threshold=0 use_all_reduce_for_fetch_params=False stage3_gather_fp16_weights_on_model_save=False ignore_unused_parameters=True legacy_stage1=False round_robin_gradients=False zero_hpz_partition_size=1 zero_quantized_weights=False zero_quantized_nontrainable_weights=False zero_quantized_gradients=False zeropp_loco_param=None mics_shard_size=-1 mics_hierarchical_params_gather=False memory_efficient_linear=True pipeline_loading_checkpoint=False override_module_apply=True log_trace_cache_warnings=False
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   zero_enabled ................. True
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   zero_force_ds_cpu_optimizer .. True
+[2026-02-04 21:44:33,827] [INFO] [config.py:1007:print]   zero_optimization_stage ...... 2
+[2026-02-04 21:44:33,828] [INFO] [config.py:993:print_user_config]   json = {
+"train_batch_size": 4,
+"train_micro_batch_size_per_gpu": 1,
+"gradient_accumulation_steps": 4,
+"zero_optimization": {
+"stage": 2,
+"offload_optimizer": {
+"device": "none",
+"nvme_path": null
+},
+"offload_param": {
+"device": "none",
+"nvme_path": null
+},
+"stage3_gather_16bit_weights_on_model_save": false
+},
+"gradient_clipping": 1.0,
+"steps_per_print": inf,
+"bf16": {
+"enabled": true
+},
+"fp16": {
+"enabled": false
+},
+"zero_allow_untested_optimizer": true
+}
+[INFO|trainer.py:2409] 2026-02-04 21:44:33,828 >> ***** Running training *****
+[INFO|trainer.py:2410] 2026-02-04 21:44:33,829 >>   Num examples = 93,733
+[INFO|trainer.py:2411] 2026-02-04 21:44:33,829 >>   Num Epochs = 1
+[INFO|trainer.py:2412] 2026-02-04 21:44:33,829 >>   Instantaneous batch size per device = 1
+[INFO|trainer.py:2415] 2026-02-04 21:44:33,829 >>   Total train batch size (w. parallel, distributed & accumulation) = 4
+[INFO|trainer.py:2416] 2026-02-04 21:44:33,829 >>   Gradient Accumulation steps = 4
+[INFO|trainer.py:2417] 2026-02-04 21:44:33,829 >>   Total optimization steps = 93,733
+[INFO|trainer.py:2418] 2026-02-04 21:44:33,829 >>   Number of trainable parameters = 2,506,172,416
+0%|                                                 | 0/93733 [00:00<?, ?it/s][rank0]: Traceback (most recent call last):
 [rank0]:   File "/opt/open-r1/src/open_r1/grpo.py", line 181, in <module>
 [rank0]:     main(script_args, training_args, model_args)
-[rank0]:   File "/opt/open-r1/src/open_r1/grpo.py", line 112, in main
-[rank0]:     trainer = GRPOTrainer(
-[rank0]:               ^^^^^^^^^^^^
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 541, in __init__
-[rank0]:     super().__init__(
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
-[rank0]:     return func(*args, **kwargs)
-[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/trainer.py", line 698, in __init__
-[rank0]:     self.init_hf_repo()
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/trainer.py", line 4644, in init_hf_repo
-[rank0]:     repo_url = create_repo(repo_name, token=token, private=self.args.hub_private_repo, exist_ok=True)
-[rank0]:                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
-[rank0]:     return fn(*args, **kwargs)
-[rank0]:            ^^^^^^^^^^^^^^^^^^^
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/huggingface_hub/hf_api.py", line 3760, in create_repo
-[rank0]:     hf_raise_for_status(r)
-[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/huggingface_hub/utils/_http.py", line 476, in hf_raise_for_status
-[rank0]:     raise _format(HfHubHTTPError, str(e), response) from e
-[rank0]: huggingface_hub.errors.HfHubHTTPError: 401 Client Error: Unauthorized for url: https://huggingface.co/api/repos/create (Request ID: Root=1-6983b699-69656a5a4f419f8a21d750a4;e93dfd2d-8f44-4c78-8ae8-e363fccc81d6)
-[rank0]: Invalid username or password.
-[rank0]:[W204 21:14:02.029183873 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
-E0204 21:14:03.187000 1328 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 1562) of binary: /opt/openr1-venv/bin/python
+[rank0]:   File "/opt/open-r1/src/open_r1/grpo.py", line 132, in main
+[rank0]:     train_result = trainer.train(resume_from_checkpoint=checkpoint)
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/trainer.py", line 2231, in train
+[rank0]:     return inner_training_loop(
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/trainer.py", line 2555, in _inner_training_loop
+[rank0]:     tr_loss_step = self.training_step(model, inputs, num_items_in_batch)
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/trainer.py", line 3739, in training_step
+[rank0]:     inputs = self._prepare_inputs(inputs)
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/extras/profiling.py", line 96, in wrapper
+[rank0]:     return func(self, *args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 972, in _prepare_inputs
+[rank0]:     generation_batch = self._generate_and_score_completions(generation_batch)
+[rank0]:                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 990, in _generate_and_score_completions
+[rank0]:     prompts_text = [maybe_apply_chat_template(example, self.processing_class)["prompt"] for example in inputs]
+[rank0]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/trainer/grpo_trainer.py", line 990, in <listcomp>
+[rank0]:     prompts_text = [maybe_apply_chat_template(example, self.processing_class)["prompt"] for example in inputs]
+[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/data_utils.py", line 225, in maybe_apply_chat_template
+[rank0]:     return apply_chat_template(example, tokenizer, tools)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/trl/data_utils.py", line 109, in apply_chat_template
+[rank0]:     prompt = tokenizer.apply_chat_template(
+[rank0]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/tokenization_utils_base.py", line 1632, in apply_chat_template
+[rank0]:     chat_template = self.get_chat_template(chat_template, tools)
+[rank0]:                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/openr1-venv/lib/python3.11/site-packages/transformers/tokenization_utils_base.py", line 1754, in get_chat_template
+[rank0]:     raise ValueError(
+[rank0]: ValueError: Cannot use chat template functions because tokenizer.chat_template is not set and no template argument was passed! For information about writing templates and setting the tokenizer.chat_template attribute, please see the documentation at https://huggingface.co/docs/transformers/main/en/chat_templating
+0%|                                                 | 0/93733 [00:00<?, ?it/s]
+[rank0]:[W204 21:44:34.258096536 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+E0204 21:44:36.642000 1346 torch/distributed/elastic/multiprocessing/api.py:869] failed (exitcode: 1) local_rank: 0 (pid: 1579) of binary: /opt/openr1-venv/bin/python
 Traceback (most recent call last):
 File "/opt/openr1-venv/bin/accelerate", line 6, in <module>
 sys.exit(main())
@@ -193,10 +193,10 @@ Failures:
 ------------------------------------------------------------
 Root Cause (first observed failure):
 [0]:
-time      : 2026-02-04_21:14:03
-host      : e40628a7455e
+time      : 2026-02-04_21:44:36
+host      : 5dacccd0a5ae
 rank      : 0 (local_rank: 0)
-exitcode  : 1 (pid: 1562)
+exitcode  : 1 (pid: 1579)
 error_file: <N/A>
 traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
 ============================================================

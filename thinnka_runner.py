@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import math
 import os
 import sys
@@ -20,7 +21,7 @@ import httpx
 import paramiko
 import yaml
 from dotenv import find_dotenv, load_dotenv
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.errors import GatedRepoError, HfHubHTTPError, RepositoryNotFoundError
 
 PROJECT_NAME = "Thinnka Podsmith"
@@ -37,6 +38,22 @@ GPU_PRIORITY = [
     ("A100 SXM", lambda name: "a100" in name and "sxm" in name),
     ("H100 SXM", lambda name: "h100" in name and "sxm" in name),
 ]
+
+DEFAULT_CHAT_TEMPLATE = (
+    "{{ bos_token }}"
+    "{% for message in messages %}"
+    "{% if message['role'] == 'system' %}"
+    "{{ message['content'] + '\\n' }}"
+    "{% elif message['role'] == 'user' %}"
+    "{{ 'User: ' + message['content'] + '\\n' }}"
+    "{% elif message['role'] == 'assistant' %}"
+    "{{ 'Assistant: ' + message['content'] + '\\n' }}"
+    "{% endif %}"
+    "{% endfor %}"
+    "{% if add_generation_prompt %}"
+    "{{ 'Assistant: ' }}"
+    "{% endif %}"
+)
 
 
 class ProgressReporter:
@@ -192,6 +209,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reasoning-end-tag", default="</think>")
     parser.add_argument("--answer-tag", default="")
     parser.add_argument("--answer-end-tag", default="")
+    parser.add_argument(
+        "--chat-template",
+        default=None,
+        help="Chat template string or path to a Jinja template file.",
+    )
     parser.add_argument("--hub-model-id", default=None)
     parser.add_argument("--num-train-epochs", type=int, default=1)
     parser.add_argument("--per-device-train-batch", type=int, default=1)
@@ -285,6 +307,35 @@ def compute_model_size_gb(model_info) -> float:
     return weight_bytes / (1024 ** 3)
 
 
+def resolve_chat_template(
+    api: HfApi,
+    repo_id: str,
+    token: str,
+    model_info,
+    template_arg: Optional[str],
+) -> Optional[str]:
+    if template_arg:
+        candidate = Path(template_arg)
+        if candidate.exists():
+            return candidate.read_text(encoding="utf-8")
+        return template_arg
+
+    siblings = [s.rfilename for s in (model_info.siblings or [])]
+    if "chat_template.jinja" in siblings:
+        return None
+
+    if "tokenizer_config.json" in siblings:
+        try:
+            config_path = hf_hub_download(repo_id, "tokenizer_config.json", token=token)
+            data = json.loads(Path(config_path).read_text(encoding="utf-8"))
+            if data.get("chat_template"):
+                return None
+        except Exception:
+            pass
+
+    return DEFAULT_CHAT_TEMPLATE
+
+
 def select_gpu_candidates(
     gpu_types: List[Dict[str, Any]],
     required_vram_gb: float,
@@ -362,7 +413,11 @@ def wait_for_ssh_port(
     raise TimeoutError("SSH port did not become available in time.")
 
 
-def build_grpo_config(args: argparse.Namespace, hub_model_id: str) -> Dict[str, Any]:
+def build_grpo_config(
+    args: argparse.Namespace,
+    hub_model_id: str,
+    chat_template: Optional[str],
+) -> Dict[str, Any]:
     default_reasoning = args.reasoning_tag == "<think>" and args.reasoning_end_tag == "</think>"
     default_answer = args.answer_tag == "<answer>" and args.answer_end_tag == "</answer>"
     use_default_tags = default_reasoning and default_answer
@@ -401,7 +456,7 @@ def build_grpo_config(args: argparse.Namespace, hub_model_id: str) -> Dict[str, 
     else:
         num_generations = 1
 
-    return {
+    config: Dict[str, Any] = {
         "model_name_or_path": args.repo_id,
         "model_revision": "main",
         "torch_dtype": "bfloat16",
@@ -443,6 +498,9 @@ def build_grpo_config(args: argparse.Namespace, hub_model_id: str) -> Dict[str, 
         "use_liger_kernel": True,
         "warmup_ratio": 0.1,
     }
+    if chat_template:
+        config["chat_template"] = chat_template
+    return config
 
 
 def build_accelerate_config(num_processes: int, zero_stage: int) -> str:
@@ -643,42 +701,43 @@ def build_setup_script(debug: bool, install_flash_attn: bool) -> str:
     ).strip() + "\n"
 
 
-def build_train_command(accel_config_path: str, grpo_config_path: str, vllm_mode: str, debug: bool) -> str:
-    shell_flags = "set -euo pipefail"
-    if debug:
-        shell_flags = f"{shell_flags}; set -x"
-    return (
-        "bash -lc \""
-        f"{shell_flags}; "
-        "TOKEN_FILE=/workspace/thinnka/hf_token; "
-        "set +x; "
-        "TOKEN=\"\"; "
-        "if [ -f \"$TOKEN_FILE\" ]; then TOKEN=$(cat \"$TOKEN_FILE\"); fi; "
-        "if [ -z \"$TOKEN\" ]; then TOKEN=${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}; fi; "
-        "if [ -z \"$TOKEN\" ]; then echo 'HF_TOKEN missing in pod environment.'; exit 1; fi; "
-        "export HF_TOKEN=\"$TOKEN\"; "
-        "export HUGGINGFACE_HUB_TOKEN=\"$TOKEN\"; "
-        "export HF_HOME=\"${HF_HOME:-/workspace/.cache/huggingface}\"; "
-        "mkdir -p \"$HF_HOME\"; "
-        "python - <<'PY'\n"
-        "import os, pathlib, sys\n"
-        "token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_HUB_TOKEN')\n"
-        "if not token:\n"
-        "    print('HF_TOKEN missing in pod environment.', file=sys.stderr)\n"
-        "    sys.exit(1)\n"
-        "hf_home = os.getenv('HF_HOME', '/workspace/.cache/huggingface')\n"
-        "path = pathlib.Path(hf_home)\n"
-        "path.mkdir(parents=True, exist_ok=True)\n"
-        "(path / 'token').write_text(token.strip())\n"
-        "PY\n"
-        "set -x; "
-        "source /opt/openr1-venv/bin/activate; "
-        "cd /opt/open-r1; "
-        "ACCELERATE_LOG_LEVEL=info "
-        f"accelerate launch --config_file {accel_config_path} "
-        f"src/open_r1/grpo.py --config {grpo_config_path} --vllm_mode {vllm_mode}"
-        "\""
-    )
+def build_train_script(accel_config_path: str, grpo_config_path: str, vllm_mode: str, debug: bool) -> str:
+    debug_line = "set -x" if debug else ""
+    return "\n".join(
+        [
+            "#!/usr/bin/env bash",
+            "set -euo pipefail",
+            debug_line,
+            "TOKEN_FILE=/workspace/thinnka/hf_token",
+            "set +x",
+            "TOKEN=\"\"",
+            "if [ -f \"$TOKEN_FILE\" ]; then TOKEN=$(cat \"$TOKEN_FILE\"); fi",
+            "if [ -z \"$TOKEN\" ]; then TOKEN=${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}; fi",
+            "if [ -z \"$TOKEN\" ]; then echo 'HF_TOKEN missing in pod environment.'; exit 1; fi",
+            "export HF_TOKEN=\"$TOKEN\"",
+            "export HUGGINGFACE_HUB_TOKEN=\"$TOKEN\"",
+            "export HF_HOME=\"${HF_HOME:-/workspace/.cache/huggingface}\"",
+            "mkdir -p \"$HF_HOME\"",
+            "python - <<'PY'",
+            "import os, pathlib, sys",
+            "token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_HUB_TOKEN')",
+            "if not token:",
+            "    print('HF_TOKEN missing in pod environment.', file=sys.stderr)",
+            "    sys.exit(1)",
+            "hf_home = os.getenv('HF_HOME', '/workspace/.cache/huggingface')",
+            "path = pathlib.Path(hf_home)",
+            "path.mkdir(parents=True, exist_ok=True)",
+            "(path / 'token').write_text(token.strip())",
+            "PY",
+            "set -x",
+            "source /opt/openr1-venv/bin/activate",
+            "cd /opt/open-r1",
+            "ACCELERATE_LOG_LEVEL=info \\",
+            f"accelerate launch --config_file {accel_config_path} \\",
+            f"  src/open_r1/grpo.py --config {grpo_config_path} --vllm_mode {vllm_mode}",
+            "",
+        ]
+    ).strip() + "\n"
 
 
 def main() -> int:
@@ -799,7 +858,10 @@ def main() -> int:
             base_name = args.repo_id.split("/")[-1]
             hub_model_id = f"{user}/{base_name}-grpo-thinnka"
 
-        config = build_grpo_config(args, hub_model_id)
+        chat_template = resolve_chat_template(hf_api, args.repo_id, hf_token, model_info, args.chat_template)
+        config = build_grpo_config(args, hub_model_id, chat_template)
+        if chat_template:
+            reporter.send("chat_template", "Using custom chat template.")
         if config.get("num_generations") != args.num_generations:
             reporter.send(
                 "num_generations_adjusted",
@@ -834,17 +896,16 @@ def main() -> int:
             reporter.send("setup_skip", "Skipping Open R1 setup.")
 
         reporter.send("train_start", "Starting GRPO training.")
-        run_ssh_command(
-            ssh_client,
-            build_train_command(
-                remote_accel_config_path,
-                remote_config_path,
-                args.vllm_mode,
-                args.debug_remote,
-            ),
-            reporter,
-            "train",
+        train_script = build_train_script(
+            remote_accel_config_path,
+            remote_config_path,
+            args.vllm_mode,
+            args.debug_remote,
         )
+        remote_train_path = f"{remote_dir}/train.sh"
+        upload_text(ssh_client, remote_train_path, train_script)
+        run_ssh_command(ssh_client, f"bash -lc \"chmod +x {remote_train_path}\"", reporter, "train")
+        run_ssh_command(ssh_client, f"bash -lc \"{remote_train_path}\"", reporter, "train")
         reporter.send("train_done", "Training finished.")
         reporter.send("done", "Run completed.")
         return 0
