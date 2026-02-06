@@ -100,6 +100,7 @@ The runner sets `max_seq_length` to `max_prompt_length + max_completion_length` 
 GRPO-only options (reward functions, `--num-generations`, and vLLM) are ignored in SFT mode.
 SFT runs use QLoRA (4-bit + LoRA) rather than full fine-tuning.
 Because QLoRA uses a device map, the runner forces ZeRO-2 when `--sft` is set (ZeRO-3 is incompatible).
+The setup step installs `peft` and `bitsandbytes` and verifies they import successfully.
 
 ## GRPO generation backend (GRPO only)
 GRPO is an online method: it must generate completions during training to compute rewards.
