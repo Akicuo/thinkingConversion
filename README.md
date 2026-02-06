@@ -68,6 +68,9 @@ Runs the test case model and creates a Pod with the default image (GRPO, no answ
 Run supervised fine-tuning (SFT):
 - `python thinnka_runner.py --repo-id unsloth/gemma-2b --gpu-count 1 --sft`
 
+Force a specific GPU by id or name substring (fails if not eligible):
+- `python thinnka_runner.py --repo-id unsloth/gemma-2b --gpu-count 1 --gpu-type "L40S"`
+
 Use the custom image if you build and push it (see below):
 - `python thinnka_runner.py --repo-id unsloth/gemma-2b --gpu-count 1 --image reeeon/thinnka:latest`
 - Add `--skip-setup` when using the custom image to avoid reinstalling Open R1.

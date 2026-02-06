@@ -307,6 +307,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--repo-id", default="unsloth/gemma-2b", help="Hugging Face model repo id.")
     parser.add_argument("--gpu-count", type=int, default=1, help="GPU count (1, 2, 4, 6, 8).")
+    parser.add_argument("--gpu-type", default=None, help="GPU type id or name substring to target.")
     parser.add_argument("--image", default=DEFAULT_IMAGE, help="Docker image for the Pod.")
     parser.add_argument("--use-thinnka-image", action="store_true", help="Use reeeon/thinnka:latest.")
     parser.add_argument("--pod-name", default=None, help="Custom Pod name.")
@@ -499,13 +500,18 @@ def select_gpu_candidates(
     gpu_types: List[Dict[str, Any]],
     required_vram_gb: float,
     explicit_choice: Optional[str] = None,
+    gpu_filter: Optional[str] = None,
 ) -> Iterable[Tuple[str, Dict[str, Any]]]:
+    normalized_filter = (gpu_filter or "").strip().lower()
+    filter_is_set = bool(normalized_filter)
     for label, matcher in GPU_PRIORITY:
         if explicit_choice and explicit_choice != label:
             continue
         matches = []
         for gpu in gpu_types:
             name = f"{gpu.get('displayName', '')} {gpu.get('id', '')}".lower()
+            if filter_is_set and normalized_filter not in name:
+                continue
             if matcher(name):
                 memory = gpu.get("memoryInGb") or 0
                 if memory >= required_vram_gb:
@@ -1108,8 +1114,13 @@ def main() -> int:
         client = RunpodGraphQLClient(runpod_api_key)
         gpu_types = client.get_gpu_types()
 
-        candidates = list(select_gpu_candidates(gpu_types, required_vram_gb))
+        candidates = list(select_gpu_candidates(gpu_types, required_vram_gb, gpu_filter=args.gpu_type))
         if not candidates:
+            if args.gpu_type:
+                raise RuntimeError(
+                    f"No eligible GPU matches '{args.gpu_type}' with >= {required_vram_gb} GB VRAM. "
+                    "Check available GPU types in Runpod."
+                )
             raise RuntimeError("No eligible GPU type meets the VRAM requirement.")
 
         volume_gb = args.volume_gb or max(40, int(math.ceil(model_size_gb * 2)))
