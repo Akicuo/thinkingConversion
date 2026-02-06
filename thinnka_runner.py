@@ -329,11 +329,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--hub-model-id", default=None)
     parser.add_argument("--num-train-epochs", type=int, default=1)
+    parser.add_argument("--max-steps", type=int, default=-1)
     parser.add_argument("--per-device-train-batch", type=int, default=1)
     parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
     parser.add_argument("--num-generations", type=int, default=16)
     parser.add_argument("--max-prompt-length", type=int, default=512)
     parser.add_argument("--max-completion-length", type=int, default=2048)
+    parser.add_argument(
+        "--dataset-fraction",
+        type=float,
+        default=1.0,
+        help="Fraction of the dataset to use (0 < fraction <= 1).",
+    )
+    parser.add_argument("--dataset-seed", type=int, default=42, help="Seed for dataset subsampling.")
     parser.add_argument("--sft", action="store_true", help="Use Open R1 SFT training instead of GRPO.")
     parser.add_argument(
         "--attn-implementation",
@@ -663,8 +671,11 @@ def build_grpo_config(
         "use_liger_kernel": True,
         "warmup_ratio": 0.1,
     }
+    if args.max_steps and args.max_steps > 0:
+        config["max_steps"] = args.max_steps
     if chat_template:
         config["chat_template"] = chat_template
+    apply_dataset_fraction(config, args)
     return config
 
 
@@ -681,6 +692,27 @@ def apply_qlora_config(config: Dict[str, Any]) -> None:
             "lora_target_modules": "all-linear",
         }
     )
+
+
+def apply_dataset_fraction(config: Dict[str, Any], args: argparse.Namespace) -> None:
+    if args.dataset_fraction >= 1.0:
+        return
+    dataset_name = config.get("dataset_name") or args.dataset_name
+    if not dataset_name:
+        raise RuntimeError("dataset_name is required to apply dataset_fraction.")
+    dataset_config = config.get("dataset_config")
+    dataset_split = config.get("dataset_train_split", "train")
+    config["dataset_mixture"] = {
+        "datasets": [
+            {
+                "id": dataset_name,
+                "config": dataset_config,
+                "split": dataset_split,
+                "weight": args.dataset_fraction,
+            }
+        ],
+        "seed": args.dataset_seed,
+    }
 
 
 def build_sft_config(
@@ -720,9 +752,12 @@ def build_sft_config(
         "seed": 42,
         "use_liger_kernel": True,
     }
+    if args.max_steps and args.max_steps > 0:
+        config["max_steps"] = args.max_steps
     if chat_template:
         config["chat_template"] = chat_template
     apply_qlora_config(config)
+    apply_dataset_fraction(config, args)
     return config
 
 
@@ -1054,6 +1089,168 @@ def build_train_script(
                 if is_grpo
                 else []
             ),
+            "python - <<'PY'",
+            "import os",
+            "import yaml",
+            "import datasets",
+            "from datasets import DatasetDict, concatenate_datasets",
+            "from transformers import AutoTokenizer",
+            "",
+            "cfg_path = os.environ.get('TRAIN_CONFIG')",
+            "if not cfg_path:",
+            "    raise SystemExit('TRAIN_CONFIG not set')",
+            "with open(cfg_path, 'r', encoding='utf-8') as handle:",
+            "    cfg = yaml.safe_load(handle) or {}",
+            "",
+            "def load_dataset_from_cfg(cfg):",
+            "    if cfg.get('dataset_mixture'):",
+            "        mix = cfg['dataset_mixture'] or {}",
+            "        seed = mix.get('seed', 0)",
+            "        datasets_list = []",
+            "        for item in mix.get('datasets', []):",
+            "            ds = datasets.load_dataset(",
+            "                item['id'],",
+            "                item.get('config'),",
+            "                split=item.get('split', 'train'),",
+            "            )",
+            "            cols = item.get('columns')",
+            "            if cols:",
+            "                ds = ds.select_columns(cols)",
+            "            weight = item.get('weight')",
+            "            if weight is not None:",
+            "                ds = ds.shuffle(seed=seed).select(range(int(len(ds) * weight)))",
+            "            datasets_list.append(ds)",
+            "        if not datasets_list:",
+            "            raise SystemExit('dataset_mixture has no datasets')",
+            "        combined = concatenate_datasets(datasets_list).shuffle(seed=seed)",
+            "        if mix.get('test_split_size') is not None:",
+            "            combined = combined.train_test_split(",
+            "                test_size=mix['test_split_size'],",
+            "                seed=seed,",
+            "            )",
+            "            return combined",
+            "        return DatasetDict({'train': combined})",
+            "    return datasets.load_dataset(cfg['dataset_name'], cfg.get('dataset_config'))",
+            "",
+            "dataset = load_dataset_from_cfg(cfg)",
+            "split = cfg.get('dataset_train_split', 'train')",
+            "data = dataset[split] if isinstance(dataset, DatasetDict) else dataset",
+            "cols = set(data.column_names)",
+            "",
+            "tokenizer = AutoTokenizer.from_pretrained(",
+            "    cfg['model_name_or_path'],",
+            "    revision=cfg.get('model_revision', 'main'),",
+            "    trust_remote_code=cfg.get('trust_remote_code', False),",
+            ")",
+            "if cfg.get('chat_template'):",
+            "    tokenizer.chat_template = cfg['chat_template']",
+            "",
+            "max_prompt = 0",
+            "max_completion = 0",
+            "max_total = 0",
+            "has_messages = 'messages' in cols",
+            "",
+            "def token_len(text: str) -> int:",
+            "    return len(tokenizer(text, add_special_tokens=False)['input_ids'])",
+            "",
+            "if has_messages:",
+            "    for ex in data:",
+            "        messages = ex.get('messages') or []",
+            "        last_idx = None",
+            "        for i in range(len(messages) - 1, -1, -1):",
+            "            msg = messages[i] or {}",
+            "            if msg.get('role') == 'assistant' and msg.get('content') is not None:",
+            "                last_idx = i",
+            "                break",
+            "        if last_idx is None:",
+            "            prompt_msgs = messages",
+            "            completion_text = ''",
+            "        else:",
+            "            prompt_msgs = messages[:last_idx]",
+            "            completion_text = messages[last_idx].get('content') or ''",
+            "        try:",
+            "            prompt_ids = tokenizer.apply_chat_template(",
+            "                prompt_msgs, tokenize=True, add_generation_prompt=True",
+            "            )",
+            "            prompt_len = len(prompt_ids)",
+            "        except Exception:",
+            "            parts = []",
+            "            for msg in prompt_msgs:",
+            "                content = (msg or {}).get('content') or ''",
+            "                if content:",
+            "                    parts.append(content)",
+            "            prompt_len = token_len('\\n'.join(parts))",
+            "        completion_len = token_len(completion_text)",
+            "        max_prompt = max(max_prompt, prompt_len)",
+            "        max_completion = max(max_completion, completion_len)",
+            "        max_total = max(max_total, prompt_len + completion_len)",
+            "else:",
+            "    prompt_col = cfg.get('dataset_prompt_column')",
+            "    text_col = None",
+            "    if prompt_col and prompt_col in cols:",
+            "        text_col = prompt_col",
+            "    elif 'text' in cols:",
+            "        text_col = 'text'",
+            "    else:",
+            "        for col in data.column_names:",
+            "            sample_val = data[0].get(col)",
+            "            if isinstance(sample_val, str):",
+            "                text_col = col",
+            "                break",
+            "    if text_col is None:",
+            "        raise SystemExit('Unable to determine text column for auto lengths')",
+            "    system_prompt = cfg.get('system_prompt') if text_col == prompt_col else None",
+            "    for ex in data:",
+            "        text = ex.get(text_col) or ''",
+            "        if system_prompt and text_col == prompt_col:",
+            "            messages = [",
+            "                {'role': 'system', 'content': system_prompt},",
+            "                {'role': 'user', 'content': text},",
+            "            ]",
+            "            try:",
+            "                prompt_ids = tokenizer.apply_chat_template(",
+            "                    messages, tokenize=True, add_generation_prompt=True",
+            "                )",
+            "                length = len(prompt_ids)",
+            "            except Exception:",
+            "                length = token_len(text)",
+            "        else:",
+            "            length = token_len(text)",
+            "        max_total = max(max_total, length)",
+            "    max_prompt = max_total",
+            "",
+            "model_max = getattr(tokenizer, 'model_max_length', None)",
+            "if model_max and model_max < 1000000:",
+            "    if max_total > model_max:",
+            "        print(f'Auto lengths capped by model_max_length={model_max}')",
+            "    max_total = min(max_total, model_max)",
+            "    max_prompt = min(max_prompt, model_max)",
+            "    if max_completion and max_prompt + max_completion > model_max:",
+            "        max_completion = max(0, model_max - max_prompt)",
+            "",
+            "changed = False",
+            "if 'max_seq_length' in cfg:",
+            "    new_len = max(1, int(max_total))",
+            "    cfg['max_seq_length'] = new_len",
+            "    print(f'Auto max_seq_length: {new_len}')",
+            "    changed = True",
+            "if 'max_prompt_length' in cfg:",
+            "    new_prompt = max(1, int(max_prompt))",
+            "    cfg['max_prompt_length'] = new_prompt",
+            "    print(f'Auto max_prompt_length: {new_prompt}')",
+            "    changed = True",
+            "if 'max_completion_length' in cfg and max_completion > 0:",
+            "    new_comp = max(1, int(max_completion))",
+            "    cfg['max_completion_length'] = new_comp",
+            "    print(f'Auto max_completion_length: {new_comp}')",
+            "    changed = True",
+            "elif 'max_completion_length' in cfg:",
+            "    print('Auto max_completion_length skipped (no completion data)')",
+            "",
+            "if changed:",
+            "    with open(cfg_path, 'w', encoding='utf-8') as handle:",
+            "        yaml.safe_dump(cfg, handle, sort_keys=False)",
+            "PY",
             "ACCELERATE_LOG_LEVEL=info \\",
             f"accelerate launch --config_file {accel_config_path} \\",
             f"  {training_script} --config {train_config_path}{vllm_flag}",
@@ -1075,6 +1272,8 @@ def main() -> int:
 
     if args.gpu_count not in ALLOWED_GPU_COUNTS:
         raise RuntimeError("GPU count must be one of 1, 2, 4, 6, 8.")
+    if args.dataset_fraction <= 0 or args.dataset_fraction > 1:
+        raise RuntimeError("--dataset-fraction must be between 0 and 1 (exclusive of 0).")
 
     runpod_api_key = os.getenv("RUNPOD_API_KEY")
     if not runpod_api_key:

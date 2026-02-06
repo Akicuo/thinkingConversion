@@ -105,6 +105,16 @@ SFT runs use QLoRA (4-bit + LoRA) rather than full fine-tuning.
 Because QLoRA uses a device map, the runner forces ZeRO-2 when `--sft` is set (ZeRO-3 is incompatible).
 The setup step installs `peft` and `bitsandbytes` and verifies they import successfully.
 
+## Speed controls
+Limit total training steps:
+- `--max-steps 500`
+
+Subsample the dataset with a fixed seed:
+- `--dataset-fraction 0.1 --dataset-seed 123`
+
+The runner auto-computes max prompt/completion lengths from the dataset on the pod to avoid truncation and over-allocation.
+If the dataset has `messages`, it splits the last assistant message as the completion; otherwise it adjusts prompt/sequence length only.
+
 ## GRPO generation backend (GRPO only)
 GRPO is an online method: it must generate completions during training to compute rewards.
 By default the runner uses vLLM for faster generation. If you hit vLLM/NCCL issues,
