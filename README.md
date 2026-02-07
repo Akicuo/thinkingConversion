@@ -206,6 +206,23 @@ Auto-detects and injects missing templates (e.g., `unsloth/gemma-2b`):
 --chat-template path/to/template.jinja
 ```
 
+### Custom Dependencies
+
+Install additional pip packages required by specific models:
+
+```bash
+# Single package
+--custom-dependencies "protobuf"
+
+# Multiple packages
+--custom-dependencies "package1,package2,package3"
+
+# Specific version
+--custom-dependencies "torchvision==0.20.0"
+```
+
+> **⚠️ Use case:** Some models (e.g., `openbmb/MiniCPM-o-4_5`) require specific dependencies for custom code execution. Combine with `--trust-remote-code` when needed.
+
 ### Reasoning Tags (GRPO)
 
 Default: `</think>` tags only (accuracy reward)
@@ -315,6 +332,8 @@ accelerate launch --config_file recipes/accelerate_configs/zero3.yaml \
 | 🚩 | Added `--transformers-from-git` flag |
 | 🎯 | Added `--transformers-version` flag |
 | 🤝 | Added `--merge-model` flag for SFT + QLoRA |
+| 📦 | Added `--custom-dependencies` flag for pip packages |
+| 🔐 | Added `--trust-remote-code` flag for custom model code |
 | 🐛 | Fixed Qwen3-Next ZeRO-3 conversion errors |
 
 ---

@@ -22,7 +22,12 @@ import paramiko
 import yaml
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import HfApi, hf_hub_download
-from huggingface_hub.errors import GatedRepoError, HfHubHTTPError, RepositoryNotFoundError
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HfHubHTTPError,
+    RepositoryNotFoundError,
+)
+
 try:
     from discord_webhook_async import DiscordWebhook
 except ImportError:
@@ -167,7 +172,9 @@ class ProgressReporter:
                                 pass
                         elif http_client:
                             try:
-                                await http_client.post(self.discord_url, json={"content": content})
+                                await http_client.post(
+                                    self.discord_url, json={"content": content}
+                                )
                             except Exception:
                                 pass
         finally:
@@ -181,7 +188,12 @@ class ProgressReporter:
         if self._loop:
             self._loop.stop()
 
-    def send(self, event: str, message: Optional[str] = None, extra: Optional[Dict[str, Any]] = None) -> None:
+    def send(
+        self,
+        event: str,
+        message: Optional[str] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
         if not (self.url or self.discord_url) or not self._loop or not self._queue:
             return
         payload = dict(self.base_payload)
@@ -194,7 +206,12 @@ class ProgressReporter:
         self._loop.call_soon_threadsafe(self._queue.put_nowait, payload)
 
     def close(self) -> None:
-        if not (self.url or self.discord_url) or not self._loop or not self._queue or not self._thread:
+        if (
+            not (self.url or self.discord_url)
+            or not self._loop
+            or not self._queue
+            or not self._thread
+        ):
             return
         self._loop.call_soon_threadsafe(self._queue.put_nowait, None)
         self._thread.join(timeout=5)
@@ -205,9 +222,13 @@ class RunpodGraphQLClient:
         self.api_key = api_key
         self.client = httpx.Client(timeout=timeout)
 
-    def query(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def query(
+        self, query: str, variables: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         url = f"{RUNPOD_GRAPHQL_URL}?api_key={self.api_key}"
-        response = self.client.post(url, json={"query": query, "variables": variables or {}})
+        response = self.client.post(
+            url, json={"query": query, "variables": variables or {}}
+        )
         response.raise_for_status()
         payload = response.json()
         if "errors" in payload:
@@ -305,15 +326,31 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Provision a Runpod Pod and run Open R1 GRPO or SFT training."
     )
-    parser.add_argument("--repo-id", default="unsloth/gemma-2b", help="Hugging Face model repo id.")
-    parser.add_argument("--gpu-count", type=int, default=1, help="GPU count (1, 2, 4, 6, 8).")
-    parser.add_argument("--gpu-type", default=None, help="GPU type id or name substring to target.")
-    parser.add_argument("--image", default=DEFAULT_IMAGE, help="Docker image for the Pod.")
-    parser.add_argument("--use-thinnka-image", action="store_true", help="Use reeeon/thinnka:latest.")
+    parser.add_argument(
+        "--repo-id", default="unsloth/gemma-2b", help="Hugging Face model repo id."
+    )
+    parser.add_argument(
+        "--gpu-count", type=int, default=1, help="GPU count (1, 2, 4, 6, 8)."
+    )
+    parser.add_argument(
+        "--gpu-type", default=None, help="GPU type id or name substring to target."
+    )
+    parser.add_argument(
+        "--image", default=DEFAULT_IMAGE, help="Docker image for the Pod."
+    )
+    parser.add_argument(
+        "--use-thinnka-image", action="store_true", help="Use reeeon/thinnka:latest."
+    )
     parser.add_argument("--pod-name", default=None, help="Custom Pod name.")
-    parser.add_argument("--cloud-type", default="ALL", choices=["ALL", "SECURE", "COMMUNITY"])
-    parser.add_argument("--volume-gb", type=int, default=300, help="Persistent volume size in GB.")
-    parser.add_argument("--container-disk-gb", type=int, default=None, help="Container disk size in GB.")
+    parser.add_argument(
+        "--cloud-type", default="ALL", choices=["ALL", "SECURE", "COMMUNITY"]
+    )
+    parser.add_argument(
+        "--volume-gb", type=int, default=300, help="Persistent volume size in GB."
+    )
+    parser.add_argument(
+        "--container-disk-gb", type=int, default=None, help="Container disk size in GB."
+    )
     parser.add_argument("--min-vcpu", type=int, default=4)
     parser.add_argument("--min-memory", type=int, default=16)
     parser.add_argument("--dataset-name", default="open-r1/OpenR1-Math-220k")
@@ -341,8 +378,12 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Fraction of the dataset to use (0 < fraction <= 1).",
     )
-    parser.add_argument("--dataset-seed", type=int, default=42, help="Seed for dataset subsampling.")
-    parser.add_argument("--sft", action="store_true", help="Use Open R1 SFT training instead of GRPO.")
+    parser.add_argument(
+        "--dataset-seed", type=int, default=42, help="Seed for dataset subsampling."
+    )
+    parser.add_argument(
+        "--sft", action="store_true", help="Use Open R1 SFT training instead of GRPO."
+    )
     parser.add_argument(
         "--shard-model",
         action="store_true",
@@ -381,13 +422,25 @@ def parse_args() -> argparse.Namespace:
     )
     parser.set_defaults(use_vllm=True)
     parser.add_argument("--vllm-mode", default="colocate")
-    parser.add_argument("--report-to", default="none", help="Set to wandb to enable W&B logging.")
+    parser.add_argument(
+        "--report-to", default="none", help="Set to wandb to enable W&B logging."
+    )
     parser.add_argument("--output-dir", default=None)
-    parser.add_argument("--skip-setup", action="store_true", help="Skip Open R1 setup (useful with custom image).")
-    parser.add_argument("--dry-run", action="store_true", help="Validate and select GPU only.")
-    parser.add_argument("--ssh-private-key", default=None, help="Path to SSH private key.")
+    parser.add_argument(
+        "--skip-setup",
+        action="store_true",
+        help="Skip Open R1 setup (useful with custom image).",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate and select GPU only."
+    )
+    parser.add_argument(
+        "--ssh-private-key", default=None, help="Path to SSH private key."
+    )
     parser.add_argument("--ssh-public-key", default=None, help="SSH public key string.")
-    parser.add_argument("--progress-url", default=None, help="Override PROGRESS_WEBHOOK_URL.")
+    parser.add_argument(
+        "--progress-url", default=None, help="Override PROGRESS_WEBHOOK_URL."
+    )
     parser.add_argument(
         "--discord-webhook-url",
         "--discord-webhook",
@@ -396,8 +449,14 @@ def parse_args() -> argparse.Namespace:
         help="Discord webhook URL for progress logs.",
     )
     parser.add_argument("--ssh-timeout-min", type=int, default=20)
-    parser.add_argument("--env-file", default=None, help="Path to a .env file (defaults to .env).")
-    parser.add_argument("--debug-remote", action="store_true", help="Enable verbose remote shell output.")
+    parser.add_argument(
+        "--env-file", default=None, help="Path to a .env file (defaults to .env)."
+    )
+    parser.add_argument(
+        "--debug-remote",
+        action="store_true",
+        help="Enable verbose remote shell output.",
+    )
     parser.add_argument(
         "--transformers-from-git",
         action="store_true",
@@ -407,6 +466,16 @@ def parse_args() -> argparse.Namespace:
         "--transformers-version",
         default=None,
         help="Explicit Transformers version (e.g., 4.57.6). Overrides auto-detection from model config.",
+    )
+    parser.add_argument(
+        "--trust-remote-code",
+        action="store_true",
+        help="Allow executing custom code from Hugging Face model repositories (required for some models like MiniCPM).",
+    )
+    parser.add_argument(
+        "--custom-dependencies",
+        default=None,
+        help="Comma-separated list of additional pip packages to install on the pod (e.g., 'package1,package2').",
     )
     return parser.parse_args()
 
@@ -438,18 +507,27 @@ def cleanup_pod(
         try:
             status = client.get_pod_status(pod_id)
         except Exception as exc:
-            reporter.send("cleanup_error", f"Failed to fetch pod status for {pod_id}: {exc}")
+            reporter.send(
+                "cleanup_error", f"Failed to fetch pod status for {pod_id}: {exc}"
+            )
             status = {}
         desired = str(status.get("desiredStatus") or "").upper()
         locked = bool(status.get("locked")) if status else False
         if locked:
-            reporter.send("cleanup_wait", f"Pod {pod_id} is locked; waiting before termination.")
+            reporter.send(
+                "cleanup_wait", f"Pod {pod_id} is locked; waiting before termination."
+            )
         if desired in {"RUNNING", "RESTARTING"}:
-            reporter.send("cleanup_wait", f"Pod {pod_id} is {desired}; waiting to terminate.")
+            reporter.send(
+                "cleanup_wait", f"Pod {pod_id} is {desired}; waiting to terminate."
+            )
             time.sleep(10)
             continue
         if desired:
-            reporter.send("cleanup_wait", f"Pod {pod_id} status {desired}; attempting termination.")
+            reporter.send(
+                "cleanup_wait",
+                f"Pod {pod_id} status {desired}; attempting termination.",
+            )
         break
 
     for attempt in range(1, 6):
@@ -492,7 +570,7 @@ def compute_model_size_gb(model_info) -> float:
             weight_bytes += size
     if weight_bytes == 0:
         weight_bytes = total_bytes
-    return weight_bytes / (1024 ** 3)
+    return weight_bytes / (1024**3)
 
 
 def get_transformers_version(
@@ -580,13 +658,17 @@ def ensure_ssh_key_material(args: argparse.Namespace) -> Tuple[str, Path]:
     if args.ssh_public_key:
         public_key = args.ssh_public_key.strip()
     else:
-        public_key = os.getenv("SSH_PUBLIC_KEY") or os.getenv("RUNPOD_SSH_PUBLIC_KEY") or ""
+        public_key = (
+            os.getenv("SSH_PUBLIC_KEY") or os.getenv("RUNPOD_SSH_PUBLIC_KEY") or ""
+        )
         if not public_key:
             default_pub = Path.home() / ".ssh" / "id_ed25519.pub"
             if default_pub.exists():
                 public_key = default_pub.read_text(encoding="utf-8").strip()
     if not public_key:
-        raise RuntimeError("SSH public key not found. Set SSH_PUBLIC_KEY or --ssh-public-key.")
+        raise RuntimeError(
+            "SSH public key not found. Set SSH_PUBLIC_KEY or --ssh-public-key."
+        )
 
     private_key_path = args.ssh_private_key or os.getenv("SSH_PRIVATE_KEY_PATH")
     if private_key_path:
@@ -626,8 +708,12 @@ def build_grpo_config(
     hub_model_id: str,
     chat_template: Optional[str],
 ) -> Dict[str, Any]:
-    default_reasoning = args.reasoning_tag == "<think>" and args.reasoning_end_tag == "</think>"
-    default_answer = args.answer_tag == "<answer>" and args.answer_end_tag == "</answer>"
+    default_reasoning = (
+        args.reasoning_tag == "<think>" and args.reasoning_end_tag == "</think>"
+    )
+    default_answer = (
+        args.answer_tag == "<answer>" and args.answer_end_tag == "</answer>"
+    )
     use_default_tags = default_reasoning and default_answer
     if use_default_tags:
         reward_funcs = ["accuracy", "format", "tag_count"]
@@ -635,7 +721,9 @@ def build_grpo_config(
         reward_funcs = ["accuracy"]
 
     report_to = [] if args.report_to == "none" else [args.report_to]
-    output_dir = args.output_dir or f"/workspace/models/{hub_model_id.replace('/', '-')}"
+    output_dir = (
+        args.output_dir or f"/workspace/models/{hub_model_id.replace('/', '-')}"
+    )
 
     if args.reasoning_tag and args.reasoning_end_tag:
         reasoning_instruction = (
@@ -645,9 +733,7 @@ def build_grpo_config(
         reasoning_instruction = "First think step by step."
 
     if args.answer_tag and args.answer_end_tag:
-        answer_instruction = (
-            f"Then provide the final answer inside {args.answer_tag} and {args.answer_end_tag}."
-        )
+        answer_instruction = f"Then provide the final answer inside {args.answer_tag} and {args.answer_end_tag}."
     else:
         answer_instruction = "Then provide the final answer directly after thinking."
 
@@ -656,9 +742,13 @@ def build_grpo_config(
         f"{reasoning_instruction} {answer_instruction}"
     )
 
-    effective_batch = args.per_device_train_batch * args.gradient_accumulation_steps * args.gpu_count
+    effective_batch = (
+        args.per_device_train_batch * args.gradient_accumulation_steps * args.gpu_count
+    )
     requested_generations = max(1, args.num_generations)
-    divisors = [d for d in range(1, requested_generations + 1) if effective_batch % d == 0]
+    divisors = [
+        d for d in range(1, requested_generations + 1) if effective_batch % d == 0
+    ]
     if divisors:
         num_generations = max(divisors)
     else:
@@ -669,6 +759,7 @@ def build_grpo_config(
         "model_revision": "main",
         "torch_dtype": "bfloat16",
         "attn_implementation": args.attn_implementation,
+        "trust_remote_code": args.trust_remote_code,
         "dataset_name": args.dataset_name,
         "dataset_prompt_column": args.dataset_prompt_column,
         "system_prompt": system_prompt,
@@ -756,7 +847,9 @@ def build_sft_config(
     chat_template: Optional[str],
 ) -> Dict[str, Any]:
     report_to = [] if args.report_to == "none" else [args.report_to]
-    output_dir = args.output_dir or f"/workspace/models/{hub_model_id.replace('/', '-')}"
+    output_dir = (
+        args.output_dir or f"/workspace/models/{hub_model_id.replace('/', '-')}"
+    )
     max_seq_length = max(1, args.max_prompt_length + args.max_completion_length)
 
     config: Dict[str, Any] = {
@@ -764,6 +857,7 @@ def build_sft_config(
         "model_revision": "main",
         "torch_dtype": "bfloat16",
         "attn_implementation": args.attn_implementation,
+        "trust_remote_code": args.trust_remote_code,
         "dataset_name": args.dataset_name,
         "bf16": True,
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
@@ -899,7 +993,12 @@ def run_ssh_command(
         raise RuntimeError(f"Remote command failed with exit status {exit_status}")
 
 
-def build_setup_script(debug: bool, install_flash_attn: bool, transformers_version: Optional[str] = None) -> str:
+def build_setup_script(
+    debug: bool,
+    install_flash_attn: bool,
+    transformers_version: Optional[str] = None,
+    custom_dependencies: Optional[List[str]] = None,
+) -> str:
     debug_line = "set -x" if debug else ""
     flash_attn_lines = []
     if install_flash_attn:
@@ -933,106 +1032,130 @@ def build_setup_script(debug: bool, install_flash_attn: bool, transformers_versi
             "PY",
         ]
 
-    return "\n".join(
-        [
-            "#!/usr/bin/env bash",
-            "set -euo pipefail",
-            debug_line,
-            "export DEBIAN_FRONTEND=noninteractive",
-            "",
-            "clone_open_r1() {",
-            "  local tries=3",
-            "  local i=1",
-            "  while [ $i -le $tries ]; do",
-            "    rm -rf /opt/open-r1",
-            "    if GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/huggingface/open-r1 /opt/open-r1; then",
-            "      return 0",
-            "    fi",
-            "    echo \"git clone failed with status $?\"",
-            "    i=$((i+1))",
-            "    sleep 5",
-            "  done",
-            "  echo \"Falling back to tarball download\"",
-            "  rm -rf /opt/open-r1 /opt/open-r1-main",
-            "  mkdir -p /opt",
-            "  curl -L --retry 3 --retry-delay 3 https://github.com/huggingface/open-r1/archive/refs/heads/main.tar.gz | tar -xz -C /opt",
-            "  mv /opt/open-r1-main /opt/open-r1",
-            "}",
-            "",
-            "check_venv() {",
-            "  if [ ! -d /opt/openr1-venv ]; then return 1; fi",
-            "  source /opt/openr1-venv/bin/activate",
-            "  set +e",
-            "  python - <<'PY'",
-            "import sys",
-            "ok = sys.version_info[:2] == (3, 11)",
-            "try:",
-            "    import torch",
-            "    ok = ok and torch.__version__.startswith('2.6.')",
-            "except Exception:",
-            "    ok = False",
-            "sys.exit(0 if ok else 1)",
-            "PY",
-            "  local status=$?",
-            "  set -e",
-            "  deactivate >/dev/null 2>&1 || true",
-            "  return $status",
-            "}",
-            "",
-            "apt-get update",
-            "apt-get install -y git git-lfs curl tar build-essential ca-certificates ninja-build python3-venv python3-dev",
-            "apt-get install -y python3.11 python3.11-venv python3.11-dev || true",
-            "if command -v python3.11 >/dev/null 2>&1; then",
-            "  PYTHON_BIN=python3.11",
-            "else",
-            "  PYTHON_BIN=python3",
-            "fi",
-            "command -v git >/dev/null 2>&1 || { echo 'git missing after install'; exit 1; }",
-            "command -v git-lfs >/dev/null 2>&1 || { echo 'git-lfs missing after install'; exit 1; }",
-            "git lfs install",
-            "",
-            "if [ ! -d /opt/open-r1 ]; then",
-            "  clone_open_r1",
-            "else",
-            "  if [ ! -d /opt/open-r1/.git ]; then",
-            "    clone_open_r1",
-            "  else",
-            "    git -C /opt/open-r1 rev-parse --is-inside-work-tree >/dev/null 2>&1 || clone_open_r1",
-            "  fi",
-            "fi",
-            "",
-            "if check_venv; then",
-            "  echo 'Using existing /opt/openr1-venv'",
-            "else",
-            "  rm -rf /opt/openr1-venv",
-            "  $PYTHON_BIN -m venv /opt/openr1-venv",
-            "fi",
-            "",
-            "source /opt/openr1-venv/bin/activate",
-            "cd /opt/open-r1",
-            "python -m pip install --upgrade pip setuptools wheel",
-            "python -m pip install torch==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124",
-            "python -m pip install vllm==0.8.5.post1",
-            *flash_attn_lines,
-            "GIT_LFS_SKIP_SMUDGE=1 python -m pip install -e \".[dev]\"",
-            "python -m pip install peft bitsandbytes",
+    custom_deps_lines = []
+    if custom_dependencies:
+        packages = " ".join(f'"{pkg}"' for pkg in custom_dependencies)
+        custom_deps_lines = [
+            f"python -m pip install {packages}",
             "python - <<'PY'",
             "import importlib",
             "missing = []",
-            "for name in ('peft', 'bitsandbytes'):",
+            f"for name in {custom_dependencies}:",
+            "    module_name = name.replace('-', '_').split('[')[0].split('==')[0].strip()",
             "    try:",
-            "        importlib.import_module(name)",
+            "        importlib.import_module(module_name)",
             "    except Exception:",
             "        missing.append(name)",
             "if missing:",
-            "    raise SystemExit(f'QLoRA deps missing: {\", \".join(missing)}')",
-            "print('QLoRA deps OK')",
+            f"    raise SystemExit(f'Custom deps missing: {\" ,\".join(missing)}')",
+            "print('Custom deps OK')",
             "PY",
-            "python -m pip uninstall -y transformers",
-            *transformers_install_lines,
-            "",
         ]
-    ).strip() + "\n"
+
+    return (
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                debug_line,
+                "export DEBIAN_FRONTEND=noninteractive",
+                "",
+                "clone_open_r1() {",
+                "  local tries=3",
+                "  local i=1",
+                "  while [ $i -le $tries ]; do",
+                "    rm -rf /opt/open-r1",
+                "    if GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/huggingface/open-r1 /opt/open-r1; then",
+                "      return 0",
+                "    fi",
+                '    echo "git clone failed with status $?"',
+                "    i=$((i+1))",
+                "    sleep 5",
+                "  done",
+                '  echo "Falling back to tarball download"',
+                "  rm -rf /opt/open-r1 /opt/open-r1-main",
+                "  mkdir -p /opt",
+                "  curl -L --retry 3 --retry-delay 3 https://github.com/huggingface/open-r1/archive/refs/heads/main.tar.gz | tar -xz -C /opt",
+                "  mv /opt/open-r1-main /opt/open-r1",
+                "}",
+                "",
+                "check_venv() {",
+                "  if [ ! -d /opt/openr1-venv ]; then return 1; fi",
+                "  source /opt/openr1-venv/bin/activate",
+                "  set +e",
+                "  python - <<'PY'",
+                "import sys",
+                "ok = sys.version_info[:2] == (3, 11)",
+                "try:",
+                "    import torch",
+                "    ok = ok and torch.__version__.startswith('2.6.')",
+                "except Exception:",
+                "    ok = False",
+                "sys.exit(0 if ok else 1)",
+                "PY",
+                "  local status=$?",
+                "  set -e",
+                "  deactivate >/dev/null 2>&1 || true",
+                "  return $status",
+                "}",
+                "",
+                "apt-get update",
+                "apt-get install -y git git-lfs curl tar build-essential ca-certificates ninja-build python3-venv python3-dev",
+                "apt-get install -y python3.11 python3.11-venv python3.11-dev || true",
+                "if command -v python3.11 >/dev/null 2>&1; then",
+                "  PYTHON_BIN=python3.11",
+                "else",
+                "  PYTHON_BIN=python3",
+                "fi",
+                "command -v git >/dev/null 2>&1 || { echo 'git missing after install'; exit 1; }",
+                "command -v git-lfs >/dev/null 2>&1 || { echo 'git-lfs missing after install'; exit 1; }",
+                "git lfs install",
+                "",
+                "if [ ! -d /opt/open-r1 ]; then",
+                "  clone_open_r1",
+                "else",
+                "  if [ ! -d /opt/open-r1/.git ]; then",
+                "    clone_open_r1",
+                "  else",
+                "    git -C /opt/open-r1 rev-parse --is-inside-work-tree >/dev/null 2>&1 || clone_open_r1",
+                "  fi",
+                "fi",
+                "",
+                "if check_venv; then",
+                "  echo 'Using existing /opt/openr1-venv'",
+                "else",
+                "  rm -rf /opt/openr1-venv",
+                "  $PYTHON_BIN -m venv /opt/openr1-venv",
+                "fi",
+                "",
+                "source /opt/openr1-venv/bin/activate",
+                "cd /opt/open-r1",
+                "python -m pip install --upgrade pip setuptools wheel",
+                "python -m pip install torch==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124",
+                "python -m pip install vllm==0.8.5.post1",
+                *flash_attn_lines,
+                'GIT_LFS_SKIP_SMUDGE=1 python -m pip install -e ".[dev]"',
+                "python -m pip install peft bitsandbytes",
+                "python - <<'PY'",
+                "import importlib",
+                "missing = []",
+                "for name in ('peft', 'bitsandbytes'):",
+                "    try:",
+                "        importlib.import_module(name)",
+                "    except Exception:",
+                "        missing.append(name)",
+                "if missing:",
+                "    raise SystemExit(f'QLoRA deps missing: {\", \".join(missing)}')",
+                "print('QLoRA deps OK')",
+                "PY",
+                "python -m pip uninstall -y transformers",
+                *transformers_install_lines,
+                *custom_deps_lines,
+                "",
+            ]
+        ).strip()
+        + "\n"
+    )
 
 
 def build_train_script(
@@ -1046,279 +1169,282 @@ def build_train_script(
     debug_line = "set -x" if debug else ""
     vllm_flag = f" --vllm_mode {vllm_mode}" if use_vllm else ""
     is_grpo = training_script.endswith("grpo.py")
-    return "\n".join(
-        [
-            "#!/usr/bin/env bash",
-            "set -euo pipefail",
-            debug_line,
-            "TOKEN_FILE=/workspace/thinnka/hf_token",
-            "set +x",
-            "TOKEN=\"\"",
-            "if [ -f \"$TOKEN_FILE\" ]; then TOKEN=$(cat \"$TOKEN_FILE\"); fi",
-            "if [ -z \"$TOKEN\" ]; then TOKEN=${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}; fi",
-            "if [ -z \"$TOKEN\" ]; then echo 'HF_TOKEN missing in pod environment.'; exit 1; fi",
-            "export HF_TOKEN=\"$TOKEN\"",
-            "export HUGGINGFACE_HUB_TOKEN=\"$TOKEN\"",
-            "export HF_HOME=\"${HF_HOME:-/workspace/.cache/huggingface}\"",
-            "mkdir -p \"$HF_HOME\"",
-            "python - <<'PY'",
-            "import os, pathlib, sys",
-            "token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_HUB_TOKEN')",
-            "if not token:",
-            "    print('HF_TOKEN missing in pod environment.', file=sys.stderr)",
-            "    sys.exit(1)",
-            "hf_home = os.getenv('HF_HOME', '/workspace/.cache/huggingface')",
-            "path = pathlib.Path(hf_home)",
-            "path.mkdir(parents=True, exist_ok=True)",
-            "(path / 'token').write_text(token.strip())",
-            "PY",
-            "set -x",
-            "source /opt/openr1-venv/bin/activate",
-            "cd /opt/open-r1",
-            f"ACCEL_CONFIG=\"{accel_config_path}\"",
-            "NUM_PROCS=$(awk -F': ' '/^num_processes:/{print $2}' \"$ACCEL_CONFIG\" | tr -d ' ')",
-            "PHYS_GPUS=0",
-            "if command -v nvidia-smi >/dev/null 2>&1; then",
-            "  PHYS_GPUS=$( (nvidia-smi -L 2>/dev/null | wc -l | tr -d ' ') || echo 0 )",
-            "fi",
-            "VISIBLE_GPUS=\"$PHYS_GPUS\"",
-            "if [ -n \"${CUDA_VISIBLE_DEVICES:-}\" ]; then",
-            "  VISIBLE_GPUS=$(python - <<'PY'",
-            "import os",
-            "val = os.environ.get('CUDA_VISIBLE_DEVICES', '')",
-            "items = [v for v in val.split(',') if v.strip() != '']",
-            "print(len(items))",
-            "PY",
-            "  )",
-            "fi",
-            "if [ \"$VISIBLE_GPUS\" -eq 0 ] && [ \"$PHYS_GPUS\" -gt 0 ]; then",
-            "  export PHYS_GPUS",
-            "  export CUDA_VISIBLE_DEVICES=$(python - <<'PY'",
-            "import os",
-            "n = int(os.environ.get('PHYS_GPUS', '0'))",
-            "print(','.join(str(i) for i in range(n)))",
-            "PY",
-            "  )",
-            "  VISIBLE_GPUS=\"$PHYS_GPUS\"",
-            "fi",
-            "if [ \"$VISIBLE_GPUS\" -eq 0 ]; then",
-            "  echo 'No GPUs detected in the container. Check GPU allocation or CUDA_VISIBLE_DEVICES.'",
-            "  exit 1",
-            "fi",
-            "if [ -n \"$NUM_PROCS\" ] && [ \"$VISIBLE_GPUS\" -lt \"$NUM_PROCS\" ]; then",
-            "  echo \"Adjusting Accelerate num_processes from $NUM_PROCS to $VISIBLE_GPUS to match visible GPUs.\"",
-            "  sed -i \"s/^num_processes: .*/num_processes: $VISIBLE_GPUS/\" \"$ACCEL_CONFIG\"",
-            "fi",
-            "export VISIBLE_GPUS",
-            f"TRAIN_CONFIG=\"{train_config_path}\"",
-            "export TRAIN_CONFIG",
-            *(
-                [
-                    "python - <<'PY'",
-                    "import os, re",
-                    "visible = int(os.environ.get('VISIBLE_GPUS', '0'))",
-                    "path = os.environ.get('TRAIN_CONFIG')",
-                    "if path and visible > 0:",
-                    "    with open(path, 'r', encoding='utf-8') as handle:",
-                    "        text = handle.read()",
-                    "    def get_int(key: str):",
-                    "        pattern = r'^' + re.escape(key) + r':\\s*(\\d+)\\s*$'",
-                    "        match = re.search(pattern, text, flags=re.M)",
-                    "        return int(match.group(1)) if match else None",
-                    "    per_device = get_int('per_device_train_batch_size')",
-                    "    grad_accum = get_int('gradient_accumulation_steps')",
-                    "    num_generations = get_int('num_generations')",
-                    "    if None not in (per_device, grad_accum, num_generations):",
-                    "        effective = per_device * grad_accum * visible",
-                    "        if effective > 0 and effective % num_generations != 0:",
-                    "            divisors = [d for d in range(1, num_generations + 1) if effective % d == 0]",
-                    "            new_gen = max(divisors) if divisors else 1",
-                    "            if new_gen != num_generations:",
-                    "                text = re.sub(",
-                    "                    r'^num_generations:\\s*\\d+\\s*$',",
-                    "                    f'num_generations: {new_gen}',",
-                    "                    text,",
-                    "                    flags=re.M,",
-                    "                )",
-                    "                with open(path, 'w', encoding='utf-8') as handle:",
-                    "                    handle.write(text)",
-                    "                print(",
-                    "                    f'Adjusted num_generations from {num_generations} to {new_gen} '",
-                    "                    f'to divide effective batch {effective}.'",
-                    "                )",
-                    "PY",
-                ]
-                if is_grpo
-                else []
-            ),
-            "python - <<'PY'",
-            "import os",
-            "import yaml",
-            "import datasets",
-            "from datasets import DatasetDict, concatenate_datasets",
-            "from transformers import AutoTokenizer",
-            "",
-            "cfg_path = os.environ.get('TRAIN_CONFIG')",
-            "if not cfg_path:",
-            "    raise SystemExit('TRAIN_CONFIG not set')",
-            "with open(cfg_path, 'r', encoding='utf-8') as handle:",
-            "    cfg = yaml.safe_load(handle) or {}",
-            "",
-            "def load_dataset_from_cfg(cfg):",
-            "    if cfg.get('dataset_mixture'):",
-            "        mix = cfg['dataset_mixture'] or {}",
-            "        seed = mix.get('seed', 0)",
-            "        datasets_list = []",
-            "        for item in mix.get('datasets', []):",
-            "            ds = datasets.load_dataset(",
-            "                item['id'],",
-            "                item.get('config'),",
-            "                split=item.get('split', 'train'),",
-            "            )",
-            "            cols = item.get('columns')",
-            "            if cols:",
-            "                ds = ds.select_columns(cols)",
-            "            weight = item.get('weight')",
-            "            if weight is not None:",
-            "                ds = ds.shuffle(seed=seed).select(range(int(len(ds) * weight)))",
-            "            datasets_list.append(ds)",
-            "        if not datasets_list:",
-            "            raise SystemExit('dataset_mixture has no datasets')",
-            "        combined = concatenate_datasets(datasets_list).shuffle(seed=seed)",
-            "        if mix.get('test_split_size') is not None:",
-            "            combined = combined.train_test_split(",
-            "                test_size=mix['test_split_size'],",
-            "                seed=seed,",
-            "            )",
-            "            return combined",
-            "        return DatasetDict({'train': combined})",
-            "    return datasets.load_dataset(cfg['dataset_name'], cfg.get('dataset_config'))",
-            "",
-            "dataset = load_dataset_from_cfg(cfg)",
-            "split = cfg.get('dataset_train_split', 'train')",
-            "data = dataset[split] if isinstance(dataset, DatasetDict) else dataset",
-            "cols = set(data.column_names)",
-            "",
-            "tokenizer = AutoTokenizer.from_pretrained(",
-            "    cfg['model_name_or_path'],",
-            "    revision=cfg.get('model_revision', 'main'),",
-            "    trust_remote_code=cfg.get('trust_remote_code', False),",
-            ")",
-            "if cfg.get('chat_template'):",
-            "    tokenizer.chat_template = cfg['chat_template']",
-            "",
-            "max_prompt = 0",
-            "max_completion = 0",
-            "max_total = 0",
-            "has_messages = 'messages' in cols",
-            "",
-            "def token_len(text: str) -> int:",
-            "    return len(tokenizer(text, add_special_tokens=False)['input_ids'])",
-            "",
-            "if has_messages:",
-            "    for ex in data:",
-            "        messages = ex.get('messages') or []",
-            "        last_idx = None",
-            "        for i in range(len(messages) - 1, -1, -1):",
-            "            msg = messages[i] or {}",
-            "            if msg.get('role') == 'assistant' and msg.get('content') is not None:",
-            "                last_idx = i",
-            "                break",
-            "        if last_idx is None:",
-            "            prompt_msgs = messages",
-            "            completion_text = ''",
-            "        else:",
-            "            prompt_msgs = messages[:last_idx]",
-            "            completion_text = messages[last_idx].get('content') or ''",
-            "        try:",
-            "            prompt_ids = tokenizer.apply_chat_template(",
-            "                prompt_msgs, tokenize=True, add_generation_prompt=True",
-            "            )",
-            "            prompt_len = len(prompt_ids)",
-            "        except Exception:",
-            "            parts = []",
-            "            for msg in prompt_msgs:",
-            "                content = (msg or {}).get('content') or ''",
-            "                if content:",
-            "                    parts.append(content)",
-            "            prompt_len = token_len('\\n'.join(parts))",
-            "        completion_len = token_len(completion_text)",
-            "        max_prompt = max(max_prompt, prompt_len)",
-            "        max_completion = max(max_completion, completion_len)",
-            "        max_total = max(max_total, prompt_len + completion_len)",
-            "else:",
-            "    prompt_col = cfg.get('dataset_prompt_column')",
-            "    text_col = None",
-            "    if prompt_col and prompt_col in cols:",
-            "        text_col = prompt_col",
-            "    elif 'text' in cols:",
-            "        text_col = 'text'",
-            "    else:",
-            "        for col in data.column_names:",
-            "            sample_val = data[0].get(col)",
-            "            if isinstance(sample_val, str):",
-            "                text_col = col",
-            "                break",
-            "    if text_col is None:",
-            "        raise SystemExit('Unable to determine text column for auto lengths')",
-            "    system_prompt = cfg.get('system_prompt') if text_col == prompt_col else None",
-            "    for ex in data:",
-            "        text = ex.get(text_col) or ''",
-            "        if system_prompt and text_col == prompt_col:",
-            "            messages = [",
-            "                {'role': 'system', 'content': system_prompt},",
-            "                {'role': 'user', 'content': text},",
-            "            ]",
-            "            try:",
-            "                prompt_ids = tokenizer.apply_chat_template(",
-            "                    messages, tokenize=True, add_generation_prompt=True",
-            "                )",
-            "                length = len(prompt_ids)",
-            "            except Exception:",
-            "                length = token_len(text)",
-            "        else:",
-            "            length = token_len(text)",
-            "        max_total = max(max_total, length)",
-            "    max_prompt = max_total",
-            "",
-            "model_max = getattr(tokenizer, 'model_max_length', None)",
-            "if model_max and model_max < 1000000:",
-            "    if max_total > model_max:",
-            "        print(f'Auto lengths capped by model_max_length={model_max}')",
-            "    max_total = min(max_total, model_max)",
-            "    max_prompt = min(max_prompt, model_max)",
-            "    if max_completion and max_prompt + max_completion > model_max:",
-            "        max_completion = max(0, model_max - max_prompt)",
-            "",
-            "changed = False",
-            "if 'max_seq_length' in cfg:",
-            "    new_len = max(1, int(max_total))",
-            "    cfg['max_seq_length'] = new_len",
-            "    print(f'Auto max_seq_length: {new_len}')",
-            "    changed = True",
-            "if 'max_prompt_length' in cfg:",
-            "    new_prompt = max(1, int(max_prompt))",
-            "    cfg['max_prompt_length'] = new_prompt",
-            "    print(f'Auto max_prompt_length: {new_prompt}')",
-            "    changed = True",
-            "if 'max_completion_length' in cfg and max_completion > 0:",
-            "    new_comp = max(1, int(max_completion))",
-            "    cfg['max_completion_length'] = new_comp",
-            "    print(f'Auto max_completion_length: {new_comp}')",
-            "    changed = True",
-            "elif 'max_completion_length' in cfg:",
-            "    print('Auto max_completion_length skipped (no completion data)')",
-            "",
-            "if changed:",
-            "    with open(cfg_path, 'w', encoding='utf-8') as handle:",
-            "        yaml.safe_dump(cfg, handle, sort_keys=False)",
-            "PY",
-            "ACCELERATE_LOG_LEVEL=info \\",
-            f"accelerate launch --config_file {accel_config_path} \\",
-            f"  {training_script} --config {train_config_path}{vllm_flag}",
-            "",
-        ]
-    ).strip() + "\n"
+    return (
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                debug_line,
+                "TOKEN_FILE=/workspace/thinnka/hf_token",
+                "set +x",
+                'TOKEN=""',
+                'if [ -f "$TOKEN_FILE" ]; then TOKEN=$(cat "$TOKEN_FILE"); fi',
+                'if [ -z "$TOKEN" ]; then TOKEN=${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}; fi',
+                "if [ -z \"$TOKEN\" ]; then echo 'HF_TOKEN missing in pod environment.'; exit 1; fi",
+                'export HF_TOKEN="$TOKEN"',
+                'export HUGGINGFACE_HUB_TOKEN="$TOKEN"',
+                'export HF_HOME="${HF_HOME:-/workspace/.cache/huggingface}"',
+                'mkdir -p "$HF_HOME"',
+                "python - <<'PY'",
+                "import os, pathlib, sys",
+                "token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_HUB_TOKEN')",
+                "if not token:",
+                "    print('HF_TOKEN missing in pod environment.', file=sys.stderr)",
+                "    sys.exit(1)",
+                "hf_home = os.getenv('HF_HOME', '/workspace/.cache/huggingface')",
+                "path = pathlib.Path(hf_home)",
+                "path.mkdir(parents=True, exist_ok=True)",
+                "(path / 'token').write_text(token.strip())",
+                "PY",
+                "set -x",
+                "source /opt/openr1-venv/bin/activate",
+                "cd /opt/open-r1",
+                f'ACCEL_CONFIG="{accel_config_path}"',
+                "NUM_PROCS=$(awk -F': ' '/^num_processes:/{print $2}' \"$ACCEL_CONFIG\" | tr -d ' ')",
+                "PHYS_GPUS=0",
+                "if command -v nvidia-smi >/dev/null 2>&1; then",
+                "  PHYS_GPUS=$( (nvidia-smi -L 2>/dev/null | wc -l | tr -d ' ') || echo 0 )",
+                "fi",
+                'VISIBLE_GPUS="$PHYS_GPUS"',
+                'if [ -n "${CUDA_VISIBLE_DEVICES:-}" ]; then',
+                "  VISIBLE_GPUS=$(python - <<'PY'",
+                "import os",
+                "val = os.environ.get('CUDA_VISIBLE_DEVICES', '')",
+                "items = [v for v in val.split(',') if v.strip() != '']",
+                "print(len(items))",
+                "PY",
+                "  )",
+                "fi",
+                'if [ "$VISIBLE_GPUS" -eq 0 ] && [ "$PHYS_GPUS" -gt 0 ]; then',
+                "  export PHYS_GPUS",
+                "  export CUDA_VISIBLE_DEVICES=$(python - <<'PY'",
+                "import os",
+                "n = int(os.environ.get('PHYS_GPUS', '0'))",
+                "print(','.join(str(i) for i in range(n)))",
+                "PY",
+                "  )",
+                '  VISIBLE_GPUS="$PHYS_GPUS"',
+                "fi",
+                'if [ "$VISIBLE_GPUS" -eq 0 ]; then',
+                "  echo 'No GPUs detected in the container. Check GPU allocation or CUDA_VISIBLE_DEVICES.'",
+                "  exit 1",
+                "fi",
+                'if [ -n "$NUM_PROCS" ] && [ "$VISIBLE_GPUS" -lt "$NUM_PROCS" ]; then',
+                '  echo "Adjusting Accelerate num_processes from $NUM_PROCS to $VISIBLE_GPUS to match visible GPUs."',
+                '  sed -i "s/^num_processes: .*/num_processes: $VISIBLE_GPUS/" "$ACCEL_CONFIG"',
+                "fi",
+                "export VISIBLE_GPUS",
+                f'TRAIN_CONFIG="{train_config_path}"',
+                "export TRAIN_CONFIG",
+                *(
+                    [
+                        "python - <<'PY'",
+                        "import os, re",
+                        "visible = int(os.environ.get('VISIBLE_GPUS', '0'))",
+                        "path = os.environ.get('TRAIN_CONFIG')",
+                        "if path and visible > 0:",
+                        "    with open(path, 'r', encoding='utf-8') as handle:",
+                        "        text = handle.read()",
+                        "    def get_int(key: str):",
+                        "        pattern = r'^' + re.escape(key) + r':\\s*(\\d+)\\s*$'",
+                        "        match = re.search(pattern, text, flags=re.M)",
+                        "        return int(match.group(1)) if match else None",
+                        "    per_device = get_int('per_device_train_batch_size')",
+                        "    grad_accum = get_int('gradient_accumulation_steps')",
+                        "    num_generations = get_int('num_generations')",
+                        "    if None not in (per_device, grad_accum, num_generations):",
+                        "        effective = per_device * grad_accum * visible",
+                        "        if effective > 0 and effective % num_generations != 0:",
+                        "            divisors = [d for d in range(1, num_generations + 1) if effective % d == 0]",
+                        "            new_gen = max(divisors) if divisors else 1",
+                        "            if new_gen != num_generations:",
+                        "                text = re.sub(",
+                        "                    r'^num_generations:\\s*\\d+\\s*$',",
+                        "                    f'num_generations: {new_gen}',",
+                        "                    text,",
+                        "                    flags=re.M,",
+                        "                )",
+                        "                with open(path, 'w', encoding='utf-8') as handle:",
+                        "                    handle.write(text)",
+                        "                print(",
+                        "                    f'Adjusted num_generations from {num_generations} to {new_gen} '",
+                        "                    f'to divide effective batch {effective}.'",
+                        "                )",
+                        "PY",
+                    ]
+                    if is_grpo
+                    else []
+                ),
+                "python - <<'PY'",
+                "import os",
+                "import yaml",
+                "import datasets",
+                "from datasets import DatasetDict, concatenate_datasets",
+                "from transformers import AutoTokenizer",
+                "",
+                "cfg_path = os.environ.get('TRAIN_CONFIG')",
+                "if not cfg_path:",
+                "    raise SystemExit('TRAIN_CONFIG not set')",
+                "with open(cfg_path, 'r', encoding='utf-8') as handle:",
+                "    cfg = yaml.safe_load(handle) or {}",
+                "",
+                "def load_dataset_from_cfg(cfg):",
+                "    if cfg.get('dataset_mixture'):",
+                "        mix = cfg['dataset_mixture'] or {}",
+                "        seed = mix.get('seed', 0)",
+                "        datasets_list = []",
+                "        for item in mix.get('datasets', []):",
+                "            ds = datasets.load_dataset(",
+                "                item['id'],",
+                "                item.get('config'),",
+                "                split=item.get('split', 'train'),",
+                "            )",
+                "            cols = item.get('columns')",
+                "            if cols:",
+                "                ds = ds.select_columns(cols)",
+                "            weight = item.get('weight')",
+                "            if weight is not None:",
+                "                ds = ds.shuffle(seed=seed).select(range(int(len(ds) * weight)))",
+                "            datasets_list.append(ds)",
+                "        if not datasets_list:",
+                "            raise SystemExit('dataset_mixture has no datasets')",
+                "        combined = concatenate_datasets(datasets_list).shuffle(seed=seed)",
+                "        if mix.get('test_split_size') is not None:",
+                "            combined = combined.train_test_split(",
+                "                test_size=mix['test_split_size'],",
+                "                seed=seed,",
+                "            )",
+                "            return combined",
+                "        return DatasetDict({'train': combined})",
+                "    return datasets.load_dataset(cfg['dataset_name'], cfg.get('dataset_config'))",
+                "",
+                "dataset = load_dataset_from_cfg(cfg)",
+                "split = cfg.get('dataset_train_split', 'train')",
+                "data = dataset[split] if isinstance(dataset, DatasetDict) else dataset",
+                "cols = set(data.column_names)",
+                "",
+                "tokenizer = AutoTokenizer.from_pretrained(",
+                "    cfg['model_name_or_path'],",
+                "    revision=cfg.get('model_revision', 'main'),",
+                "    trust_remote_code=cfg.get('trust_remote_code', False),",
+                ")",
+                "if cfg.get('chat_template'):",
+                "    tokenizer.chat_template = cfg['chat_template']",
+                "",
+                "max_prompt = 0",
+                "max_completion = 0",
+                "max_total = 0",
+                "has_messages = 'messages' in cols",
+                "",
+                "def token_len(text: str) -> int:",
+                "    return len(tokenizer(text, add_special_tokens=False)['input_ids'])",
+                "",
+                "if has_messages:",
+                "    for ex in data:",
+                "        messages = ex.get('messages') or []",
+                "        last_idx = None",
+                "        for i in range(len(messages) - 1, -1, -1):",
+                "            msg = messages[i] or {}",
+                "            if msg.get('role') == 'assistant' and msg.get('content') is not None:",
+                "                last_idx = i",
+                "                break",
+                "        if last_idx is None:",
+                "            prompt_msgs = messages",
+                "            completion_text = ''",
+                "        else:",
+                "            prompt_msgs = messages[:last_idx]",
+                "            completion_text = messages[last_idx].get('content') or ''",
+                "        try:",
+                "            prompt_ids = tokenizer.apply_chat_template(",
+                "                prompt_msgs, tokenize=True, add_generation_prompt=True",
+                "            )",
+                "            prompt_len = len(prompt_ids)",
+                "        except Exception:",
+                "            parts = []",
+                "            for msg in prompt_msgs:",
+                "                content = (msg or {}).get('content') or ''",
+                "                if content:",
+                "                    parts.append(content)",
+                "            prompt_len = token_len('\\n'.join(parts))",
+                "        completion_len = token_len(completion_text)",
+                "        max_prompt = max(max_prompt, prompt_len)",
+                "        max_completion = max(max_completion, completion_len)",
+                "        max_total = max(max_total, prompt_len + completion_len)",
+                "else:",
+                "    prompt_col = cfg.get('dataset_prompt_column')",
+                "    text_col = None",
+                "    if prompt_col and prompt_col in cols:",
+                "        text_col = prompt_col",
+                "    elif 'text' in cols:",
+                "        text_col = 'text'",
+                "    else:",
+                "        for col in data.column_names:",
+                "            sample_val = data[0].get(col)",
+                "            if isinstance(sample_val, str):",
+                "                text_col = col",
+                "                break",
+                "    if text_col is None:",
+                "        raise SystemExit('Unable to determine text column for auto lengths')",
+                "    system_prompt = cfg.get('system_prompt') if text_col == prompt_col else None",
+                "    for ex in data:",
+                "        text = ex.get(text_col) or ''",
+                "        if system_prompt and text_col == prompt_col:",
+                "            messages = [",
+                "                {'role': 'system', 'content': system_prompt},",
+                "                {'role': 'user', 'content': text},",
+                "            ]",
+                "            try:",
+                "                prompt_ids = tokenizer.apply_chat_template(",
+                "                    messages, tokenize=True, add_generation_prompt=True",
+                "                )",
+                "                length = len(prompt_ids)",
+                "            except Exception:",
+                "                length = token_len(text)",
+                "        else:",
+                "            length = token_len(text)",
+                "        max_total = max(max_total, length)",
+                "    max_prompt = max_total",
+                "",
+                "model_max = getattr(tokenizer, 'model_max_length', None)",
+                "if model_max and model_max < 1000000:",
+                "    if max_total > model_max:",
+                "        print(f'Auto lengths capped by model_max_length={model_max}')",
+                "    max_total = min(max_total, model_max)",
+                "    max_prompt = min(max_prompt, model_max)",
+                "    if max_completion and max_prompt + max_completion > model_max:",
+                "        max_completion = max(0, model_max - max_prompt)",
+                "",
+                "changed = False",
+                "if 'max_seq_length' in cfg:",
+                "    new_len = max(1, int(max_total))",
+                "    cfg['max_seq_length'] = new_len",
+                "    print(f'Auto max_seq_length: {new_len}')",
+                "    changed = True",
+                "if 'max_prompt_length' in cfg:",
+                "    new_prompt = max(1, int(max_prompt))",
+                "    cfg['max_prompt_length'] = new_prompt",
+                "    print(f'Auto max_prompt_length: {new_prompt}')",
+                "    changed = True",
+                "if 'max_completion_length' in cfg and max_completion > 0:",
+                "    new_comp = max(1, int(max_completion))",
+                "    cfg['max_completion_length'] = new_comp",
+                "    print(f'Auto max_completion_length: {new_comp}')",
+                "    changed = True",
+                "elif 'max_completion_length' in cfg:",
+                "    print('Auto max_completion_length skipped (no completion data)')",
+                "",
+                "if changed:",
+                "    with open(cfg_path, 'w', encoding='utf-8') as handle:",
+                "        yaml.safe_dump(cfg, handle, sort_keys=False)",
+                "PY",
+                "ACCELERATE_LOG_LEVEL=info \\",
+                f"accelerate launch --config_file {accel_config_path} \\",
+                f"  {training_script} --config {train_config_path}{vllm_flag}",
+                "",
+            ]
+        ).strip()
+        + "\n"
+    )
 
 
 def build_merge_script(
@@ -1328,97 +1454,100 @@ def build_merge_script(
     debug: bool,
 ) -> str:
     debug_line = "set -x" if debug else ""
-    return "\n".join(
-        [
-            "#!/usr/bin/env bash",
-            "set -euo pipefail",
-            debug_line,
-            "TOKEN_FILE=/workspace/thinnka/hf_token",
-            "set +x",
-            "TOKEN=\"\"",
-            "if [ -f \"$TOKEN_FILE\" ]; then TOKEN=$(cat \"$TOKEN_FILE\"); fi",
-            "if [ -z \"$TOKEN\" ]; then TOKEN=${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}; fi",
-            "if [ -z \"$TOKEN\" ]; then echo 'HF_TOKEN missing in pod environment.'; exit 1; fi",
-            "export HF_TOKEN=\"$TOKEN\"",
-            "export HUGGINGFACE_HUB_TOKEN=\"$TOKEN\"",
-            "export HF_HOME=\"${HF_HOME:-/workspace/.cache/huggingface}\"",
-            "mkdir -p \"$HF_HOME\"",
-            "python - <<'PY'",
-            "import os, pathlib, sys, shutil, json",
-            "token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_HUB_TOKEN')",
-            "if not token:",
-            "    print('HF_TOKEN missing in pod environment.', file=sys.stderr)",
-            "    sys.exit(1)",
-            "hf_home = os.getenv('HF_HOME', '/workspace/.cache/huggingface')",
-            "path = pathlib.Path(hf_home)",
-            "path.mkdir(parents=True, exist_ok=True)",
-            "(path / 'token').write_text(token.strip())",
-            "PY",
-            "set -x",
-            "source /opt/openr1-venv/bin/activate",
-            "echo 'Loading base model and LoRA adapter...'",
-            "python - <<'PY'",
-            "import os",
-            "import torch",
-            "from transformers import AutoModelForCausalLM, AutoTokenizer",
-            "from peft import PeftModel",
-            "from huggingface_hub import HfApi",
-            "import shutil",
-            "",
-            "output_dir = os.environ.get('OUTPUT_DIR', '/workspace/models/temp-merged')",
-            "hub_model_id = os.environ.get('HUB_MODEL_ID')",
-            "repo_id = os.environ.get('REPO_ID')",
-            "",
-            "print(f'Output directory: {output_dir}')",
-            "print(f'Hub model ID: {hub_model_id}')",
-            "print(f'Base repo ID: {repo_id}')",
-            "",
-            "base_model_path = repo_id",
-            "adapter_path = output_dir",
-            "",
-            "print('Loading base model...')",
-            "base_model = AutoModelForCausalLM.from_pretrained(",
-            "    base_model_path,",
-            "    torch_dtype=torch.bfloat16,",
-            "    device_map='auto',",
-            ")",
-            "",
-            "print('Loading LoRA adapter...')",
-            "model = PeftModel.from_pretrained(base_model, adapter_path)",
-            "",
-            "print('Merging adapter into base model...')",
-            "merged_model = model.merge_and_unload()",
-            "",
-            "print('Saving merged model...')",
-            "merged_model.save_pretrained(",
-            "    output_dir,",
-            "    safe_serialization=True,",
-            ")",
-            "",
-            "print('Saving tokenizer...')",
-            "tokenizer = AutoTokenizer.from_pretrained(base_model_path)",
-            "tokenizer.save_pretrained(output_dir)",
-            "",
-            "print('Uploading to Hugging Face Hub...')",
-            "api = HfApi(token=os.environ.get('HF_TOKEN') or os.environ.get('HUGGINGFACE_HUB_TOKEN'))",
-            "",
-            "api.create_repo(",
-            "    repo_id=hub_model_id,",
-            "    exist_ok=True,",
-            "    private=False,",
-            ")",
-            "",
-            "api.upload_folder(",
-            "    repo_id=hub_model_id,",
-            "    folder_path=output_dir,",
-            "    repo_type='model',",
-            ")",
-            "",
-            "print(f'Merged model uploaded successfully to {hub_model_id}')",
-            "PY",
-            "",
-        ]
-    ).strip() + "\n"
+    return (
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                debug_line,
+                "TOKEN_FILE=/workspace/thinnka/hf_token",
+                "set +x",
+                'TOKEN=""',
+                'if [ -f "$TOKEN_FILE" ]; then TOKEN=$(cat "$TOKEN_FILE"); fi',
+                'if [ -z "$TOKEN" ]; then TOKEN=${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}; fi',
+                "if [ -z \"$TOKEN\" ]; then echo 'HF_TOKEN missing in pod environment.'; exit 1; fi",
+                'export HF_TOKEN="$TOKEN"',
+                'export HUGGINGFACE_HUB_TOKEN="$TOKEN"',
+                'export HF_HOME="${HF_HOME:-/workspace/.cache/huggingface}"',
+                'mkdir -p "$HF_HOME"',
+                "python - <<'PY'",
+                "import os, pathlib, sys, shutil, json",
+                "token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_HUB_TOKEN')",
+                "if not token:",
+                "    print('HF_TOKEN missing in pod environment.', file=sys.stderr)",
+                "    sys.exit(1)",
+                "hf_home = os.getenv('HF_HOME', '/workspace/.cache/huggingface')",
+                "path = pathlib.Path(hf_home)",
+                "path.mkdir(parents=True, exist_ok=True)",
+                "(path / 'token').write_text(token.strip())",
+                "PY",
+                "set -x",
+                "source /opt/openr1-venv/bin/activate",
+                "echo 'Loading base model and LoRA adapter...'",
+                "python - <<'PY'",
+                "import os",
+                "import torch",
+                "from transformers import AutoModelForCausalLM, AutoTokenizer",
+                "from peft import PeftModel",
+                "from huggingface_hub import HfApi",
+                "import shutil",
+                "",
+                "output_dir = os.environ.get('OUTPUT_DIR', '/workspace/models/temp-merged')",
+                "hub_model_id = os.environ.get('HUB_MODEL_ID')",
+                "repo_id = os.environ.get('REPO_ID')",
+                "",
+                "print(f'Output directory: {output_dir}')",
+                "print(f'Hub model ID: {hub_model_id}')",
+                "print(f'Base repo ID: {repo_id}')",
+                "",
+                "base_model_path = repo_id",
+                "adapter_path = output_dir",
+                "",
+                "print('Loading base model...')",
+                "base_model = AutoModelForCausalLM.from_pretrained(",
+                "    base_model_path,",
+                "    torch_dtype=torch.bfloat16,",
+                "    device_map='auto',",
+                ")",
+                "",
+                "print('Loading LoRA adapter...')",
+                "model = PeftModel.from_pretrained(base_model, adapter_path)",
+                "",
+                "print('Merging adapter into base model...')",
+                "merged_model = model.merge_and_unload()",
+                "",
+                "print('Saving merged model...')",
+                "merged_model.save_pretrained(",
+                "    output_dir,",
+                "    safe_serialization=True,",
+                ")",
+                "",
+                "print('Saving tokenizer...')",
+                "tokenizer = AutoTokenizer.from_pretrained(base_model_path)",
+                "tokenizer.save_pretrained(output_dir)",
+                "",
+                "print('Uploading to Hugging Face Hub...')",
+                "api = HfApi(token=os.environ.get('HF_TOKEN') or os.environ.get('HUGGINGFACE_HUB_TOKEN'))",
+                "",
+                "api.create_repo(",
+                "    repo_id=hub_model_id,",
+                "    exist_ok=True,",
+                "    private=False,",
+                ")",
+                "",
+                "api.upload_folder(",
+                "    repo_id=hub_model_id,",
+                "    folder_path=output_dir,",
+                "    repo_type='model',",
+                ")",
+                "",
+                "print(f'Merged model uploaded successfully to {hub_model_id}')",
+                "PY",
+                "",
+            ]
+        ).strip()
+        + "\n"
+    )
 
 
 def main() -> int:
@@ -1430,16 +1559,24 @@ def main() -> int:
     if bool(args.answer_tag) ^ bool(args.answer_end_tag):
         raise RuntimeError("Answer tags must include both start and end or be empty.")
     if bool(args.reasoning_tag) ^ bool(args.reasoning_end_tag):
-        raise RuntimeError("Reasoning tags must include both start and end or be empty.")
+        raise RuntimeError(
+            "Reasoning tags must include both start and end or be empty."
+        )
 
     if args.gpu_count not in ALLOWED_GPU_COUNTS:
         raise RuntimeError("GPU count must be one of 1, 2, 4, 6, 8.")
     if args.dataset_fraction <= 0 or args.dataset_fraction > 1:
-        raise RuntimeError("--dataset-fraction must be between 0 and 1 (exclusive of 0).")
+        raise RuntimeError(
+            "--dataset-fraction must be between 0 and 1 (exclusive of 0)."
+        )
     if args.merge_model and not args.sft:
-        raise RuntimeError("--merge-model is only supported with SFT mode (use --sft flag).")
+        raise RuntimeError(
+            "--merge-model is only supported with SFT mode (use --sft flag)."
+        )
     if args.merge_model and args.shard_model:
-        raise RuntimeError("--merge-model is not supported with --shard-model (QLoRA disabled).")
+        raise RuntimeError(
+            "--merge-model is not supported with --shard-model (QLoRA disabled)."
+        )
 
     runpod_api_key = os.getenv("RUNPOD_API_KEY")
     if not runpod_api_key:
@@ -1486,7 +1623,9 @@ def main() -> int:
         client = RunpodGraphQLClient(runpod_api_key)
         gpu_types = client.get_gpu_types()
 
-        candidates = list(select_gpu_candidates(gpu_types, required_vram_gb, gpu_filter=args.gpu_type))
+        candidates = list(
+            select_gpu_candidates(gpu_types, required_vram_gb, gpu_filter=args.gpu_type)
+        )
         if not candidates:
             if args.gpu_type:
                 raise RuntimeError(
@@ -1496,9 +1635,14 @@ def main() -> int:
             raise RuntimeError("No eligible GPU type meets the VRAM requirement.")
 
         volume_gb = args.volume_gb or max(40, int(math.ceil(model_size_gb * 2)))
-        container_disk_gb = args.container_disk_gb or max(40, int(math.ceil(model_size_gb * 1.5)))
+        container_disk_gb = args.container_disk_gb or max(
+            40, int(math.ceil(model_size_gb * 1.5))
+        )
 
-        pod_name = args.pod_name or f"thinnka-{args.repo_id.replace('/', '-')}-{args.gpu_count}x"
+        pod_name = (
+            args.pod_name
+            or f"thinnka-{args.repo_id.replace('/', '-')}-{args.gpu_count}x"
+        )
         env = build_pod_env(ssh_public_key, hf_token)
 
         pod = None
@@ -1525,7 +1669,10 @@ def main() -> int:
                 return 0
             try:
                 pod = client.create_pod(input_data)
-                reporter.send("pod_created", f"Pod {pod.get('id')} created with {gpu.get('displayName')}.")
+                reporter.send(
+                    "pod_created",
+                    f"Pod {pod.get('id')} created with {gpu.get('displayName')}.",
+                )
                 break
             except Exception as exc:
                 last_error = exc
@@ -1563,7 +1710,9 @@ def main() -> int:
             base_name = args.repo_id.split("/")[-1]
             hub_model_id = f"{user}/{base_name}-{training_mode}-thinnka"
 
-        chat_template = resolve_chat_template(hf_api, args.repo_id, hf_token, model_info, args.chat_template)
+        chat_template = resolve_chat_template(
+            hf_api, args.repo_id, hf_token, model_info, args.chat_template
+        )
         if args.sft:
             config = build_sft_config(args, hub_model_id, chat_template)
         else:
@@ -1602,13 +1751,20 @@ def main() -> int:
         remote_accel_config_path = f"{remote_dir}/accelerate.yaml"
         remote_token_path = f"{remote_dir}/hf_token"
 
-        run_ssh_command(ssh_client, f"bash -lc \"mkdir -p {remote_dir}\"", reporter, "setup")
+        run_ssh_command(
+            ssh_client, f'bash -lc "mkdir -p {remote_dir}"', reporter, "setup"
+        )
         upload_text(ssh_client, remote_config_path, config_text)
         upload_text(ssh_client, remote_accel_config_path, accel_config_text)
         upload_text(ssh_client, remote_token_path, hf_token)
-        run_ssh_command(ssh_client, f"bash -lc \"chmod 600 {remote_token_path}\"", reporter, "setup")
+        run_ssh_command(
+            ssh_client, f'bash -lc "chmod 600 {remote_token_path}"', reporter, "setup"
+        )
         reporter.send("config_uploaded", f"Config uploaded to {remote_config_path}.")
-        reporter.send("config_uploaded", f"Accelerate config uploaded to {remote_accel_config_path}.")
+        reporter.send(
+            "config_uploaded",
+            f"Accelerate config uploaded to {remote_accel_config_path}.",
+        )
 
         if not args.skip_setup:
             reporter.send("setup_start", "Installing Open R1 on the Pod.")
@@ -1617,24 +1773,54 @@ def main() -> int:
             transformers_version = None
             if args.transformers_from_git:
                 transformers_version = "git"
-                reporter.send("transformers_version", "Installing Transformers from git HEAD.")
+                reporter.send(
+                    "transformers_version", "Installing Transformers from git HEAD."
+                )
             elif args.transformers_version:
                 transformers_version = args.transformers_version
-                reporter.send("transformers_version", f"Installing Transformers version: {transformers_version}")
+                reporter.send(
+                    "transformers_version",
+                    f"Installing Transformers version: {transformers_version}",
+                )
             else:
                 detected_version = get_transformers_version(args.repo_id, hf_token)
                 if detected_version:
                     transformers_version = detected_version
-                    reporter.send("transformers_version", f"Auto-detected Transformers version from model config: {transformers_version}")
+                    reporter.send(
+                        "transformers_version",
+                        f"Auto-detected Transformers version from model config: {transformers_version}",
+                    )
                 else:
                     transformers_version = "4.57.6"
-                    reporter.send("transformers_version", f"Using default Transformers version: {transformers_version}")
+                    reporter.send(
+                        "transformers_version",
+                        f"Using default Transformers version: {transformers_version}",
+                    )
 
-            setup_script = build_setup_script(args.debug_remote, install_flash_attn, transformers_version)
+            # Parse custom dependencies string into list
+            custom_deps = None
+            if args.custom_dependencies:
+                custom_deps = [dep.strip() for dep in args.custom_dependencies.split(',') if dep.strip()]
+                if custom_deps:
+                    reporter.send(
+                        "custom_dependencies",
+                        f"Will install custom dependencies: {', '.join(custom_deps)}"
+                    )
+
+            setup_script = build_setup_script(
+                args.debug_remote, install_flash_attn, transformers_version, custom_deps
+            )
             remote_setup_path = f"{remote_dir}/setup.sh"
             upload_text(ssh_client, remote_setup_path, setup_script)
-            run_ssh_command(ssh_client, f"bash -lc \"chmod +x {remote_setup_path}\"", reporter, "setup")
-            run_ssh_command(ssh_client, f"bash -lc \"{remote_setup_path}\"", reporter, "setup")
+            run_ssh_command(
+                ssh_client,
+                f'bash -lc "chmod +x {remote_setup_path}"',
+                reporter,
+                "setup",
+            )
+            run_ssh_command(
+                ssh_client, f'bash -lc "{remote_setup_path}"', reporter, "setup"
+            )
             reporter.send("setup_done", "Open R1 setup completed.")
         else:
             reporter.send("setup_skip", "Skipping Open R1 setup.")
@@ -1650,8 +1836,12 @@ def main() -> int:
         )
         remote_train_path = f"{remote_dir}/train.sh"
         upload_text(ssh_client, remote_train_path, train_script)
-        run_ssh_command(ssh_client, f"bash -lc \"chmod +x {remote_train_path}\"", reporter, "train")
-        run_ssh_command(ssh_client, f"bash -lc \"{remote_train_path}\"", reporter, "train")
+        run_ssh_command(
+            ssh_client, f'bash -lc "chmod +x {remote_train_path}"', reporter, "train"
+        )
+        run_ssh_command(
+            ssh_client, f'bash -lc "{remote_train_path}"', reporter, "train"
+        )
         reporter.send("train_done", "Training finished.")
 
         if args.merge_model and args.sft and not args.shard_model:
@@ -1665,10 +1855,15 @@ def main() -> int:
             )
             remote_merge_path = f"{remote_dir}/merge.sh"
             upload_text(ssh_client, remote_merge_path, merge_script)
-            run_ssh_command(ssh_client, f"bash -lc \"chmod +x {remote_merge_path}\"", reporter, "merge")
             run_ssh_command(
                 ssh_client,
-                f"bash -lc \"OUTPUT_DIR={merge_output_dir} HUB_MODEL_ID={hub_model_id} REPO_ID={args.repo_id} {remote_merge_path}\"",
+                f'bash -lc "chmod +x {remote_merge_path}"',
+                reporter,
+                "merge",
+            )
+            run_ssh_command(
+                ssh_client,
+                f'bash -lc "OUTPUT_DIR={merge_output_dir} HUB_MODEL_ID={hub_model_id} REPO_ID={args.repo_id} {remote_merge_path}"',
                 reporter,
                 "merge",
             )
