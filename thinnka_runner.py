@@ -1047,7 +1047,7 @@ def build_setup_script(
             "    except Exception:",
             "        missing.append(name)",
             "if missing:",
-            f"    raise SystemExit(f'Custom deps missing: {\" ,\".join(missing)}')",
+            "    raise SystemExit('Custom deps missing: ' + ', '.join(missing))",
             "print('Custom deps OK')",
             "PY",
         ]
