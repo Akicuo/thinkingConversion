@@ -25,10 +25,15 @@ RUN git clone --depth 1 https://github.com/huggingface/open-r1 /opt/open-r1
 WORKDIR /opt/open-r1
 
 RUN uv pip install --upgrade pip \
-  && uv pip install vllm==0.8.5.post1 \
   && uv pip install setuptools \
-  && uv pip install flash-attn --no-build-isolation \
-  && GIT_LFS_SKIP_SMUDGE=1 uv pip install -e ".[dev]"
+  && GIT_LFS_SKIP_SMUDGE=1 uv pip install -e ".[dev]" \
+  && uv pip install peft bitsandbytes \
+  && uv pip uninstall -y transformers \
+  && uv pip install git+https://github.com/huggingface/transformers.git \
+  && python - <<'PY' \
+import transformers \
+print(f"Transformers version: {getattr(transformers, '__version__', 'unknown')} {getattr(transformers, '__git_version__', '')}") \
+PY
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
